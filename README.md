@@ -34,7 +34,7 @@ Les options de l'aperçu affichent la version anglaise, masquent les textes ou m
 
 Options : `--lang fr|en`, `--size 1080x1920|720x1280`, `--no-text`, `--no-audio`, `--png` (images sans perte, plus lent), `--jobs 4`, `--from` / `--to` (numéros d'image), `--stills 188,338,975`.
 
-Le master se rend en 2 min 30 environ sur 4 cœurs, la version légère en 1 minute. Le son est en H.264 + AAC 48 kHz, −14 LUFS intégrés, crête réelle −1,8 dBTP.
+Le master se rend en 2 min 30 environ sur 4 cœurs, la version légère en 1 minute. Vidéo H.264, son AAC 48 kHz à −14 LUFS intégrés, crête réelle −1,8 dBTP.
 
 ## Organisation
 
