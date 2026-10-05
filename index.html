@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Le Fil — animatique</title>
+<link rel="stylesheet" href="src/stage.css">
+<style>
+  :root { --bg: #0E1120; --panel: #151A2C; --line: #262D45; --txt: #E8ECF5; --muted: #8F97AD; --lime: #C8FF3E; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--txt); font: 14px/1.4 Inter, system-ui, sans-serif; }
+  body.render { background: #000; overflow: hidden; }
+  body.render #panel { display: none; }
+  body.render #viewport { position: absolute; left: 0; top: 0; width: auto; height: auto; padding: 0; }
+  #app { display: flex; height: 100%; }
+  #viewport { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 16px; min-width: 0; }
+  #root { transform-origin: 0 0; }
+  #panel { width: 380px; flex: none; background: var(--panel); border-left: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; }
+  #panel header { padding: 16px 18px 8px; }
+  #panel h1 { font: 700 18px/1.2 'Space Grotesk', sans-serif; margin: 0 0 2px; }
+  #panel .sub { color: var(--muted); font-size: 12px; }
+  .row { display: flex; align-items: center; gap: 8px; padding: 6px 18px; flex-wrap: wrap; }
+  button, select { background: #1E2440; color: var(--txt); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font: inherit; cursor: pointer; }
+  button:hover { border-color: var(--lime); }
+  button.primary { background: var(--lime); color: #0B0E1A; border-color: var(--lime); font-weight: 600; min-width: 72px; }
+  input[type=range] { width: 100%; accent-color: var(--lime); }
+  .tc { font: 600 22px/1 'JetBrains Mono', monospace; }
+  .meta { color: var(--muted); font: 12px/1.5 'JetBrains Mono', monospace; }
+  .now { margin: 6px 18px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; min-height: 64px; }
+  .now b { color: var(--lime); font-weight: 600; }
+  #sync { flex: 1; overflow: auto; border-top: 1px solid var(--line); margin-top: 8px; }
+  #sync div { display: grid; grid-template-columns: 64px 44px 1fr; gap: 6px; padding: 5px 18px; font-size: 12px; cursor: pointer; border-bottom: 1px solid #1B2135; }
+  #sync div:hover { background: #1B2238; }
+  #sync div.on { background: #23304A; }
+  #sync .t { font-family: 'JetBrains Mono', monospace; color: var(--muted); }
+  #sync .s { color: var(--muted); grid-column: 3; }
+  .warn { color: #FFB86B; font-size: 12px; padding: 0 18px; }
+  @media (max-width: 760px) { #app { flex-direction: column; } #panel { width: auto; height: 46%; border-left: 0; border-top: 1px solid var(--line); } }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="viewport"><div id="root"></div></div>
+  <aside id="panel">
+    <header>
+      <h1>TutorLab — « Le Fil »</h1>
+      <div class="sub">Animatique 60 s · 9:16 · 30 i/s · 96 BPM · son témoin de synthèse</div>
+    </header>
+    <div class="row">
+      <button id="play" class="primary">Lecture</button>
+      <button id="prev" title="Image précédente (←)">−1</button>
+      <button id="next" title="Image suivante (→)">+1</button>
+      <button id="prevBeat" title="Temps précédent (Maj+←)">−♩</button>
+      <button id="nextBeat" title="Temps suivant (Maj+→)">+♩</button>
+    </div>
+    <div class="row"><input id="scrub" type="range" min="0" max="1799" value="0"></div>
+    <div class="row"><span class="tc" id="tc">0:00,00</span><span class="meta" id="meta"></span></div>
+    <div class="row">
+      <select id="lang"><option value="fr">Français</option><option value="en">English</option></select>
+      <label><input type="checkbox" id="text" checked> Textes</label>
+      <label><input type="checkbox" id="guides"> Zones sûres 10 %</label>
+      <label><input type="checkbox" id="mute"> Muet</label>
+    </div>
+    <div class="warn" id="warn"></div>
+    <div class="now" id="now"></div>
+    <div id="sync"></div>
+  </aside>
+</div>
+<audio id="audio" preload="auto"></audio>
+<script type="module">
+import { createStage } from './src/stage.js';
+import { FRAMES, FPS, BEAT, SYNC, PLANS, timecode } from './src/timeline.js';
+
+const q = new URLSearchParams(location.search);
+const renderMode = q.has('render');
+const root = document.getElementById('root');
+const S = createStage(root, { lang: q.get('lang') || 'fr', text: q.get('text') !== '0', guides: q.get('guides') === '1' });
+
+// Le rendu attend que les polices soient chargées : sinon les textes seraient mesurés avec une police de repli.
+const fontsReady = Promise.all([
+  '700 66px "Space Grotesk"', '500 40px "Space Grotesk"', '400 40px Inter', '500 40px Inter', '600 40px Inter',
+  '500 40px "JetBrains Mono"', '700 40px "JetBrains Mono"',
+].map((f) => document.fonts.load(f))).then(() => document.fonts.ready).then(() => {
+  S.setOptions({});
+});
+
+if (renderMode) {
+  document.body.classList.add('render');
+  const scale = Number(q.get('scale') || 1);
+  root.style.transform = `scale(${scale})`;
+  window.LeFil = { FRAMES, ready: fontsReady.then(() => true), renderFrame: (f) => S.renderFrame(f) };
+} else {
+  const audio = document.getElementById('audio');
+  const src = `out/audio/le-fil-temoin.wav`;
+  fetch(src, { method: 'HEAD' }).then((r) => {
+    if (r.ok) audio.src = src;
+    else document.getElementById('warn').textContent = 'Son témoin absent : lancer « npm run audio ».';
+  });
+  let frame = Number(q.get('f') || 0), playing = false, t0 = 0, f0 = 0;
+  const $ = (id) => document.getElementById(id);
+  const fit = () => {
+    const vp = $('viewport').getBoundingClientRect();
+    const s = Math.min((vp.width - 32) / 1080, (vp.height - 32) / 1920);
+    root.style.transform = `scale(${s})`;
+    root.style.width = `${1080 * s}px`; root.style.height = `${1920 * s}px`;
+  };
+  addEventListener('resize', fit); fit();
+
+  $('sync').innerHTML = SYNC.map((r, i) => `<div data-f="${r.frame}" data-i="${i}"><span class="t">${r.time}</span><span class="t">${r.frame}</span><span>${r.anim}</span><span class="s">${r.sfx !== '—' ? '♪ ' + r.sfx : ''}${r.bed !== '—' ? ' · fond : ' + r.bed : ''}</span></div>`).join('');
+  $('sync').addEventListener('click', (e) => { const d = e.target.closest('[data-f]'); if (d) seek(Number(d.dataset.f)); });
+
+  function show() {
+    S.renderFrame(frame);
+    const t = frame / FPS;
+    $('tc').textContent = timecode(frame);
+    const beat = Math.floor(t / BEAT + 1e-6);
+    const plan = PLANS.find((p) => t >= p.from && t < p.to) || PLANS[7];
+    $('meta').textContent = `image ${frame} · temps ${beat + 1}/96 · plan ${plan.id}`;
+    if (!playing) $('scrub').value = frame;
+    let cur = -1;
+    SYNC.forEach((r, i) => { if (r.frame <= frame) cur = i; });
+    const r = SYNC[cur];
+    $('now').innerHTML = `<b>Plan ${plan.id} — ${plan.name}</b><br>${r ? `${r.time} · ${r.anim}${r.sfx !== '—' ? `<br>♪ ${r.sfx}` : ''}${r.bed !== '—' ? `<br>Fond : ${r.bed}` : ''}` : ''}`;
+    document.querySelectorAll('#sync .on').forEach((x) => x.classList.remove('on'));
+    const row = document.querySelector(`#sync [data-i="${cur}"]`);
+    if (row) { row.classList.add('on'); if (playing) row.scrollIntoView({ block: 'nearest' }); }
+  }
+  function seek(f) { frame = Math.max(0, Math.min(FRAMES - 1, f)); if (playing) { f0 = frame; t0 = performance.now(); audio.currentTime = frame / FPS; } show(); }
+  function tick() {
+    if (!playing) return;
+    const f = audio.src && !audio.paused && !$('mute').checked ? Math.floor(audio.currentTime * FPS) : f0 + Math.floor((performance.now() - t0) / 1000 * FPS);
+    if (f >= FRAMES) { toggle(); frame = FRAMES - 1; show(); return; }
+    if (f !== frame) { frame = f; show(); }
+    requestAnimationFrame(tick);
+  }
+  function toggle() {
+    playing = !playing;
+    $('play').textContent = playing ? 'Pause' : 'Lecture';
+    if (playing) {
+      if (frame >= FRAMES - 1) frame = 0;
+      f0 = frame; t0 = performance.now();
+      if (audio.src && !$('mute').checked) { audio.currentTime = frame / FPS; audio.play().catch(() => {}); }
+      requestAnimationFrame(tick);
+    } else audio.pause();
+  }
+  $('play').onclick = toggle;
+  $('prev').onclick = () => seek(frame - 1);
+  $('next').onclick = () => seek(frame + 1);
+  const beatFrame = (k) => Math.round((Math.floor(frame / FPS / BEAT + 1e-6) + k) * BEAT * FPS);
+  $('prevBeat').onclick = () => seek(beatFrame(frame % Math.round(BEAT * FPS) === 0 ? -1 : 0));
+  $('nextBeat').onclick = () => seek(beatFrame(1));
+  $('scrub').oninput = (e) => seek(Number(e.target.value));
+  $('lang').value = S.options.lang;
+  $('lang').onchange = (e) => { S.setOptions({ lang: e.target.value }); show(); };
+  $('text').onchange = (e) => { S.setOptions({ text: e.target.checked }); show(); };
+  $('guides').onchange = (e) => { S.setOptions({ guides: e.target.checked }); show(); };
+  $('mute').onchange = (e) => { audio.muted = e.target.checked; };
+  addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' && e.target.type === 'range') return;
+    if (e.code === 'Space') { e.preventDefault(); toggle(); }
+    if (e.code === 'ArrowLeft') seek(e.shiftKey ? beatFrame(-1) : frame - 1);
+    if (e.code === 'ArrowRight') seek(e.shiftKey ? beatFrame(1) : frame + 1);
+  });
+  fontsReady.then(show);
+}
+</script>
+</body>
+</html>

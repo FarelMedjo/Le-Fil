@@ -1,0 +1,58 @@
+@font-face { font-family: 'Space Grotesk'; font-weight: 500; src: url(../assets/fonts/space-grotesk-latin-500-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Space Grotesk'; font-weight: 700; src: url(../assets/fonts/space-grotesk-latin-700-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Inter'; font-weight: 400; src: url(../assets/fonts/inter-latin-400-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Inter'; font-weight: 500; src: url(../assets/fonts/inter-latin-500-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Inter'; font-weight: 600; src: url(../assets/fonts/inter-latin-600-normal.woff2) format('woff2'); }
+@font-face { font-family: 'JetBrains Mono'; font-weight: 500; src: url(../assets/fonts/jetbrains-mono-latin-500-normal.woff2) format('woff2'); }
+@font-face { font-family: 'JetBrains Mono'; font-weight: 700; src: url(../assets/fonts/jetbrains-mono-latin-700-normal.woff2) format('woff2'); }
+
+.stage {
+  --ink: #0B0E1A; --cream: #FAFAF7; --deep: #05070F; --lime: #C8FF3E; --mist: #C9CEDA; --white: #F5F7FC;
+  position: relative; width: 1080px; height: 1920px; overflow: hidden; background: var(--deep);
+  font-family: 'Inter', sans-serif; color: var(--ink);
+  -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision;
+}
+.layer { position: absolute; inset: 0; transform-origin: 0 50%; backface-visibility: hidden; }
+.layer .art { position: absolute; inset: 0; display: block; }
+.layer .text { position: absolute; inset: 0; }
+.page .shade { position: absolute; inset: 0; opacity: 0; pointer-events: none; background: linear-gradient(90deg, rgba(5,7,15,0) 0%, rgba(5,7,15,0.9) 100%); }
+.grain { position: absolute; inset: 0; opacity: 0.07; mix-blend-mode: overlay; pointer-events: none; }
+.fade { position: absolute; inset: 0; background: var(--deep); pointer-events: none; }
+.guides { position: absolute; left: 108px; top: 192px; width: 864px; height: 1536px; border: 3px dashed rgba(255, 60, 60, 0.75); display: none; pointer-events: none; }
+.show-guides .guides { display: block; }
+.no-text .text { display: none; }
+
+.slot { position: absolute; display: flex; flex-direction: column; gap: 14px; }
+.card { will-change: transform, opacity; }
+.line { margin: 0; }
+.line + .line { margin-top: 8px; }
+.w { display: inline-block; overflow: hidden; vertical-align: top; padding: 0.14em 0.02em 0.16em; margin: -0.14em -0.02em -0.16em; }
+.wi { display: inline-block; }
+.mono { font-family: 'JetBrains Mono', monospace; font-weight: 700; letter-spacing: -0.03em; }
+
+.hero { font: 700 92px/1.02 'Space Grotesk', sans-serif; letter-spacing: -0.025em; }
+.title { font: 700 66px/1.08 'Space Grotesk', sans-serif; letter-spacing: -0.018em; }
+.title .mono { font-size: 0.92em; }
+.sub { font: 500 46px/1.22 'Inter', sans-serif; color: #444B5C; letter-spacing: -0.01em; }
+.question { font: 700 56px/1.1 'Space Grotesk', sans-serif; letter-spacing: -0.015em; }
+.num { font: 700 76px/1.15 'JetBrains Mono', monospace; color: var(--lime); }
+.num .mono { letter-spacing: -0.01em; }
+.info { font: 500 42px/1.3 'Inter', sans-serif; color: var(--mist); }
+.dark .hero, .dark .title { color: var(--white); }
+.dark .sub { color: var(--mist); font-weight: 500; font-size: 52px; line-height: 1.2; }
+.dark .slot { gap: 26px; }
+
+.hl { position: relative; display: inline-block; }
+.hl .ul { position: absolute; left: -3%; bottom: -16px; overflow: visible; }
+.hl .ul path { fill: none; stroke: var(--lime); stroke-width: 8px; stroke-linecap: round; stroke-dasharray: 1 1; stroke-dashoffset: 1; filter: drop-shadow(0 0 6px rgba(200,255,62,0.75)); }
+
+.checks { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 24px; margin-top: 22px; }
+.chk { display: flex; align-items: center; gap: 18px; font: 600 42px/1.1 'Inter', sans-serif; opacity: 0; }
+.chk svg { width: 54px; height: 54px; flex: none; }
+.chk circle { fill: var(--ink); }
+.chk path { fill: none; stroke: var(--lime); stroke-width: 5.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1 1; stroke-dashoffset: 1; }
+
+.signature { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.signature .logo { height: 76px; width: auto; display: block; }
+.signature .pill { font: 600 38px/1 'Inter', sans-serif; color: var(--ink); background: var(--lime); border-radius: 999px; padding: 22px 28px; white-space: nowrap; }
+.signature .pill .mono { font-weight: 700; }
