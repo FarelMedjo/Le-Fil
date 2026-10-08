@@ -39,7 +39,7 @@ Les options de l'aperçu affichent la version anglaise, masquent les textes ou m
 
 Options : `--cut master|30s|64s`, `--format 9:16|16:9`, `--lang fr|en`, `--size 1080x1920|720x1280|1920x1080`, `--no-text`, `--no-audio`, `--png` (images sans perte, plus lent), `--jobs 4`, `--from` / `--to` (numéros d'image), `--stills 188,338,975`. Elles se combinent : `--cut 30s --format 16:9 --lang en` donne la version courte anglaise en 16:9. Sans `--stills` explicite, une version produit une image de chaque côté de chaque coupe et une par seconde.
 
-Le master se rend en 2 min 30 environ sur 4 cœurs, la version légère en 1 minute. Vidéo H.264, son AAC 48 kHz à −14 LUFS intégrés, crête réelle −1,8 dBTP. Débits du § 7 : 6 Mb/s au plus et AAC 192 kb/s pour le master, la variante 64 s et le 16:9 ; 1,5 Mb/s et AAC 128 kb/s pour les exports 720 × 1280, dont la version courte.
+Le master se rend en 2 min 30 environ sur 4 cœurs, la version légère en 1 minute, la version courte en 40 secondes, la variante 64 s en 2 min 45 et le 16:9 en 2 min 20. Vidéo H.264, son AAC 48 kHz à −14 LUFS intégrés, crête réelle −1,8 dBTP. Débits du § 7 : 6 Mb/s au plus et AAC 192 kb/s pour le master, la variante 64 s et le 16:9 ; 1,5 Mb/s et AAC 128 kb/s pour les exports 720 × 1280, dont la version courte.
 
 ## Les versions
 
