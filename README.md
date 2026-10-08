@@ -43,7 +43,7 @@ Le master se rend en 2 min 30 environ sur 4 cœurs, la version légère en 1 min
 
 ## Les versions
 
-Chaque version est un montage du master, décrit dans `src/cuts.js` : une suite de segments (« à tel instant de la version, montrer le master à partir de tel instant »). Toutes les coupes tombent sur la grille de 96 BPM, dans le master comme dans la version, si bien que le fond sonore garde sa pulsation. Les bruitages suivent leur image, les textes sont posés au montage, et la feuille de synchronisation de la version est recalculée (coupes en vert dans l'aperçu).
+Chaque version est un montage du master, décrit dans `src/cuts.js` : une suite de segments (« à tel instant de la version, montrer le master à partir de tel instant »). Toutes les coupes tombent sur la grille de 96 BPM, dans le master comme dans la version, si bien que le fond sonore garde sa pulsation. Les bruitages suivent leur image, les textes sont posés au montage, et la feuille de synchronisation de la version est recalculée (coupes en vert lime dans l'aperçu).
 
 ### Version courte 30 s (§ 9)
 
@@ -65,7 +65,7 @@ Les deux coupes internes (0:11,25 et 0:18,75) tombent sur des images fixes : seu
 - **Limites recalées sur la grille.** Les temps du § 9 (0:03, 0:19, 0:23) ne tombent pas sur un temps de 96 BPM ; les coupes passent au temps le plus proche.
 - **Spécialistes raccourci de 2 temps (6,25 s au lieu de 7,5 s), Clôture allongée d'autant (8,125 s au lieu de 7 s).** Avec 7 s, le slogan et le bloc contact ne tenaient pas ensemble. Résolution et Suivi glissent donc d'environ 1 s plus tôt.
 - **T5d en bas de l'écran**, sous la feuille de bilan, pour rester affiché avec T5b : les deux engagements tiennent dans les 3,75 s du segment.
-- **Temps de lecture.** La règle du § 2 (1 s + 0,3 s par mot) est tenue partout, sauf pour T7b (2,75 s pour 3,4 s), T5d (3,05 s pour 3,4 s) et la mention du paiement (2,5 s ; c'est une mention en petit, doublée par la légende de publication). Le carton contact garde les durées du master : numéros 2,5 s et 1,9 s, logo 1,25 s.
+- **Temps de lecture.** La règle du § 2 (1 s + 0,3 s par mot) est tenue partout, sauf pour T7b (2,75 s pour 3,4 s), T5d (3,05 s pour 3,4 s) et la mention du paiement en petit (2,5 s pour 11 mots). Le carton contact garde les durées du master : numéros 2,5 s et 1,9 s, logo 1,25 s.
 
 ### Variante 64 s (§ 7)
 
@@ -73,7 +73,7 @@ Identique au master jusqu'à 0:59,5 : mêmes images, mêmes sons (seul le gain d
 
 ### Adaptation 16:9 (§ 7)
 
-1920 × 1080, même montage et même son que le master. Les textes passent dans une colonne à gauche (marges de 10 %), sur un panneau crème qui se fond dans l'image ; l'image est une fenêtre sur le cadre 9:16, à l'échelle 0,9, dont le cadrage suit l'action plan par plan (`wideView` dans `src/scene.js`). Le monde sombre du plan 7 occupe tout l'écran, avec ses coins de cadrage. Quelques textes ont des retours à la ligne propres au 16:9 (`wide` dans `src/texts.js`), sans changer un mot.
+1920 × 1080, même montage et même son que le master. Les textes passent dans une colonne à gauche (marges de 10 %), sur un panneau crème qui se fond dans l'image ; l'image est une fenêtre sur le cadre 9:16, à l'échelle 0,9, dont le cadrage suit l'action plan par plan (`wideView` dans `src/scene.js`). Le monde sombre du plan 7 occupe tout l'écran, avec ses coins de cadrage. T4, T5b et T6 ont des retours à la ligne propres au 16:9 (`wide` dans `src/texts.js`) ; les mots ne changent pas, seul le point entre « MTN MoMo » et « Orange Money » devient un retour à la ligne.
 
 ## Organisation
 
