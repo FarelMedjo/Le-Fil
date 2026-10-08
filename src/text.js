@@ -1,8 +1,8 @@
 // Calque texte (HTML) : titres révélés en cascade, mots qui montent de 110 % à 0, décalage 60 ms.
-import { CARDS, SLOTS } from './texts.js';
+// Les cartons arrivent déjà calés sur le temps de la version (src/cuts.js).
 import { ease, prog } from './util.js';
 
-const KIND = { '!': 'hero', '#': 'title', '~': 'sub', '?': 'question', '=': 'num', '-': 'info' };
+const KIND = { '!': 'hero', '#': 'title', '~': 'sub', '?': 'question', '=': 'num', '-': 'info', '.': 'note' };
 const STAGGER = 0.06;
 const RISE = 0.55;
 const EXIT = 0.22;
@@ -41,14 +41,14 @@ function signatureHtml(src) {
   return `<div class="signature"><img class="logo" src="assets/brand/tutorlab-logo-horizontal-sombre.png" alt="TutorLab"><span class="pill">${units(src).map((u) => u.replace(/`([^`]*)`/g, '<span class="mono">$1</span>')).join(' ')}</span></div>`;
 }
 
-export function buildText(containers, lang) {
+export function buildText(containers, lang, schedule, positions, wide = false) {
   const cards = [];
   const slots = {};
   for (const root of Object.values(containers)) root.innerHTML = '';
-  for (const c of CARDS) {
+  for (const c of schedule) {
     const key = `${c.world}:${c.slot}:${c.stack || c.id}`;
     if (!slots[key]) {
-      const pos = SLOTS[c.slot];
+      const pos = positions[c.slot];
       const div = document.createElement('div');
       div.className = 'slot';
       Object.assign(div.style, { left: `${pos.x}px`, top: `${pos.y}px`, width: `${pos.w}px` });
@@ -57,7 +57,7 @@ export function buildText(containers, lang) {
     }
     const el = document.createElement('div');
     el.className = `card card-${c.id}`;
-    const src = c[lang] || c.fr;
+    const src = (wide && c.wide?.[lang]) || c[lang] || c.fr;
     if (c.type === 'checks') el.innerHTML = checksHtml(src);
     else if (c.type === 'signature') el.innerHTML = signatureHtml(src[0]);
     else el.innerHTML = src.map(lineHtml).join('');

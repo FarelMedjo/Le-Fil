@@ -4,26 +4,30 @@
 // (section 5). Ce témoin sert à valider le rythme, la grille de 96 BPM et la courbe d'intensité
 // avant la séance d'enregistrement. Chaque son imite l'objet prévu (crayon, gomme, compas, règle…).
 //
-// Sorties (out/audio) :
+// Une bande-son par version (src/cuts.js) : master 60 s, version courte 30 s, variante 64 s.
+// Les bruitages suivent leur image dans le montage ; le fond sonore est remonté sur la grille de
+// 96 BPM en suivant, segment par segment, la courbe d'intensité du master. Le 16:9 reprend le son du master.
+//
+// Sorties (out/audio), pour le master puis avec le suffixe -30s ou -64s :
 //   le-fil-temoin.wav           mix complet, −14 LUFS intégrés, crête ≤ −1 dBFS
-//   pistes/bruitages.wav        bruitages synchronisés seuls
-//   pistes/fond-sonore.wav      pulsation + trousse + nappe
-//   pistes/ambiance.wav         ambiance de pièce
+//   pistes/bruitages.wav        bruitages synchronisés seuls        (pistes en 32 bits flottants,
+//   pistes/fond-sonore.wav      pulsation + trousse + nappe          au gain du mix, avant limiteur :
+//   pistes/ambiance.wav         ambiance de pièce                    leur somme = le mix non limité)
+//
+//   node scripts/build-audio.mjs            les trois versions
+//   node scripts/build-audio.mjs 30s        une seule version
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { BEAT, DURATION, at } from '../src/timeline.js';
+import { BEAT, FPS, at } from '../src/timeline.js';
+import { CUTS, cutOf, segments, masterTime, versionTime } from '../src/cuts.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(ROOT, 'out', 'audio');
 const SR = 48000;
-const LEN = DURATION * SR;
 const TAU = Math.PI * 2;
 
-const fx = new Float32Array(LEN);
-const bed = new Float32Array(LEN);
-const amb = new Float32Array(LEN);
 
 // ---------- outils ----------
 
@@ -291,10 +295,12 @@ function chord(freqs, dur = 2.6, bright = 1) {
   return peakNorm(out, 0.6);
 }
 
-// ---------- pose des bruitages (feuille de synchronisation) ----------
+// ---------- bruitages du master (feuille de synchronisation) ----------
 
-const FX = [];
-const at2 = (t, sound, gain = 1, label = '') => { put(fx, t, sound, gain); FX.push([t, label]); };
+// Chaque bruitage est synthétisé une fois, puis posé dans chaque version à l'instant de son image.
+const EV = [];
+const at2 = (t, data, gain = 1, label = '') => { EV.push({ t, data, gain, label }); };
+
 
 // Plan 0 : la ligne monte, cale (6 images de silence), redescend, gomme ×2
 at2(at(9), graphite(at(56) - at(9), (u) => -5 + 5 * (1 - (1 - u) ** 2), { release: 4 }), 1, 'graphite montant');
@@ -352,6 +358,55 @@ at2(at(1725), tap({ soft: true }), 0.8, 'tapotement feutré');
 at2(at(1744), tap({ soft: true }), 0.8, 'tapotement feutré');
 at2(at(1763), bell(), 0.8, 'cloche à main');
 
+// Sons liés à un mouvement de la ligne ou d'un objet : une coupe les interrompt (fondu de la durée
+// indiquée, en secondes). Les autres (clics, tampon, twang, verre, cloche…) résonnent au-delà de la coupe.
+const MOTION = {
+  'graphite montant': 0.08, 'graphite descendant': 0.08, 'glissé sur bois': 0.08, 'graphite discret': 0.08,
+  'graphite tendu': 0.08, 'graphite neutre': 0.08, 'graphite reprend': 0.08, franchissement: 0.5,
+  chaise: 0.08, 'glissement de feuille': 0.08, 'gomme douce': 0.08, glissando: 0.08, 'graphite court': 0.08,
+};
+
+function trimIn(data, skip) {
+  const out = data.slice(Math.round(skip * SR));
+  for (let i = 0; i < Math.min(out.length, ms(15)); i++) out[i] *= i / ms(15);
+  return out;
+}
+function trimOut(data, keep, tail) {
+  const k = Math.max(0, Math.round(keep * SR)), n = Math.round(tail * SR);
+  const out = data.slice(0, k + n);
+  for (let i = 0; i < n && k + i < out.length; i++) out[k + i] *= 1 - i / n;
+  return out;
+}
+
+// Bruitages d'une version : chaque son suit son image ; un son attaché à un texte déplacé suit le texte.
+function fxFor(cut, len) {
+  const fx = new Float32Array(len);
+  const segs = segments(cut).filter((s) => s.rate === 1); // le temps ralenti ne porte aucun bruitage
+  const recue = cut.recue || {};
+  let n = 0;
+  for (const e of EV) {
+    const moved = recue[Math.round(e.t * FPS)];
+    if (moved !== undefined) { put(fx, moved, e.data, e.gain); n++; continue; }
+    const dur = e.data.length / SR, tail = MOTION[e.label];
+    for (const s of segs) {
+      const inside = e.t >= s.from - 1e-9 && e.t < s.to - 1e-9;
+      const running = tail !== undefined && e.t < s.from && e.t + dur > s.from + 0.02; // déjà lancé à la coupe
+      if (!inside && !running) continue;
+      let data = e.data, t0 = e.t;
+      if (running) { data = trimIn(data, s.from - e.t); t0 = s.from; }
+      if (tail !== undefined && t0 + data.length / SR > s.to + tail) data = trimOut(data, s.to - t0, tail);
+      put(fx, s.at + (t0 - s.from), data, e.gain);
+      n++;
+    }
+  }
+  return { fx, n };
+}
+
+// Graine du hasard au début du fond sonore : chaque version repart de la même, la variante 64 s
+// reproduit donc le master à l'échantillon près.
+const BED_SEED = seed;
+
+
 // ---------- fond sonore (96 BPM) ----------
 
 // Automation : images-clés [t, valeur] ; deux clés rapprochées = coupure nette.
@@ -380,80 +435,106 @@ const voice3 = auto([[0, 0], [17.5 - CUT, 0], [17.5, 1], [45, 1], [45.6, 0.6], [
 const pitch = auto([[0, 0], [32.5 - CUT, 0], [32.5, 2], [35.0, 2], [35.6, 0], [52.5 - CUT, 0], [52.5, 12]]);
 const bright = auto([[0, 0.25], [52.5 - CUT, 0.25], [52.5, 0.55]]);
 
-// Le fond s'atténue de 3 à 4 dB sous les bruitages signature.
-const DUCK = [at(338), at(525), at(1163), at(1519), at(1528), at(1538), at(1547), at(1556), at(1763)];
-const duck = (t) => {
-  let g = 1;
-  for (const d of DUCK) {
-    const x = t - d;
-    if (x < -0.02 || x > 0.4) continue;
-    const e = x < 0 ? (x + 0.02) / 0.02 : x < 0.12 ? 1 : 1 - (x - 0.12) / 0.28;
-    g = Math.min(g, 1 - (1 - db(-3.5)) * e);
-  }
-  return g;
-};
+// Bruitages signature sous lesquels le fond s'atténue de 3 à 4 dB (images du master).
+const DUCK = [338, 525, 1163, 1519, 1528, 1538, 1547, 1556, 1763];
 
-// Pulsation : crayon tapé côté gomme sur un cahier fermé, sur chaque temps.
-for (let k = 0; k < 96; k++) {
-  const t = k * BEAT;
-  const lv = pulseLevel(t + 0.001);
-  if (lv > 0) put(bed, t, tap({ soft: true }), lv * 0.7);
-}
-// Trousse : secouée d'un coup sec sur les croches.
-{
-  const r = rng(99);
-  for (let k = 0; k < 192; k++) {
-    const t = k * BEAT / 2;
-    const lv = shakerLevel(t + 0.001);
-    if (lv <= 0) continue;
-    const s = buf(0.12), bp = new Biquad('bp', 4200 + r() * 800, 0.8), hp = new Biquad('hp', 2000);
-    for (let i = 0; i < s.length; i++) s[i] = hp.run(bp.run(r() * 2 - 1)) * Math.min(1, i / ms(6)) * Math.exp(-i / ms(35));
-    peakNorm(s, 1);
-    put(bed, t, s, lv * [0.5, 0.25, 0.38, 0.25][k % 4]);
-  }
-}
-// Nappe : verre chanté, trois voix ; coupe-bas à 150 Hz.
-{
-  const hp = new Biquad('hp', 150, 0.7);
-  const ph = [0, 0, 0, 0, 0, 0];
-  const base = [note('D4'), note('F#4'), note('A4')];
-  for (let i = 0; i < LEN; i++) {
-    const t = i / SR;
-    const lv = padLevel(t);
-    let v = 0;
-    if (lv > 0) {
-      const tr = 2 ** (pitch(t) / 12), b = bright(t);
-      const gains = [1, voice2(t), voice3(t)];
-      for (let k = 0; k < 3; k++) {
-        if (gains[k] <= 0) continue;
-        const f = base[k] * tr * (1 + 0.0015 * Math.sin(TAU * (4.6 + k * 0.4) * t));
-        ph[k] += TAU * f / SR;
-        ph[k + 3] += TAU * f * 1.0021 / SR; // battement du verre
-        v += gains[k] * (Math.sin(ph[k]) + 0.6 * Math.sin(ph[k + 3]) + b * Math.sin(2 * ph[k]) + b * 0.3 * Math.sin(3 * ph[k]));
+// Fond sonore d'une version : à chaque instant, la courbe d'intensité du master à l'image montrée.
+// Coupes et départs restent sur la grille ; au saut d'une coupe, les niveaux passent en 5 ms.
+function bedFor(cut, len) {
+  seed = BED_SEED;
+  const bed = new Float32Array(len);
+  const segs = segments(cut);
+  const mt = (t) => masterTime(cut, t);
+  const jumps = segs.slice(1).filter((s, i) => Math.abs(s.from - segs[i].to) > 1e-6).map((s) => s.at);
+  const stop = cut.stop ?? Infinity; // version courte : tout s'arrête sur la cloche
+  const gate = (t) => (t < stop ? 1 : t < stop + CUT ? 1 - (t - stop) / CUT : 0);
+  const level = (fn) => (t) => {
+    for (const c of jumps) {
+      if (Math.abs(t - c) < CUT / 2) {
+        const a = fn(mt(c - CUT / 2)), b = fn(mt(c + CUT / 2));
+        return (a + (b - a) * (t - c + CUT / 2) / CUT) * gate(t);
       }
-      v *= lv * 0.12 * (0.92 + 0.08 * Math.sin(TAU * 0.4 * t));
     }
-    bed[i] += hp.run(v);
-  }
-}
-for (let i = 0; i < LEN; i++) bed[i] *= duck(i / SR);
+    return fn(mt(t)) * gate(t);
+  };
+  const pulse = level(pulseLevel), shaker = level(shakerLevel), pad = level(padLevel), v2 = level(voice2), v3 = level(voice3);
+  const pitchAt = (t) => pitch(mt(t)), brightAt = (t) => bright(mt(t));
+  const recue = cut.recue || {};
+  const ducks = DUCK.map((f) => recue[f] ?? versionTime(cut, at(f))).filter((x) => x !== null && Number.isFinite(x));
+  const duck = (t) => {
+    let g = 1;
+    for (const d of ducks) {
+      const x = t - d;
+      if (x < -0.02 || x > 0.4) continue;
+      const e = x < 0 ? (x + 0.02) / 0.02 : x < 0.12 ? 1 : 1 - (x - 0.12) / 0.28;
+      g = Math.min(g, 1 - (1 - db(-3.5)) * e);
+    }
+    return g;
+  };
+  const beats = Math.ceil(len / SR / BEAT);
 
-// Ambiance de pièce calme le soir.
-{
-  const r = rng(5), lp = new Biquad('lp', 1800), hp = new Biquad('hp', 90);
-  const lv = auto([[0, 0.022], [3.75, 0.022], [5, 0.012], [58.75, 0.012], [59.0, 0.02], [59.4, 0.02], [60, 0]]);
-  for (let i = 0; i < LEN; i++) amb[i] = hp.run(lp.run(r() * 2 - 1)) * lv(i / SR) * 3;
+  // Pulsation : crayon tapé côté gomme sur un cahier fermé, sur chaque temps.
+  for (let k = 0; k < beats; k++) {
+    const t = k * BEAT;
+    const lv = pulse(t + 0.001);
+    if (lv > 0) put(bed, t, tap({ soft: true }), lv * 0.7);
+  }
+  // Trousse : secouée d'un coup sec sur les croches.
+  {
+    const r = rng(99);
+    for (let k = 0; k < beats * 2; k++) {
+      const t = k * BEAT / 2;
+      const lv = shaker(t + 0.001);
+      if (lv <= 0) continue;
+      const s = buf(0.12), bp = new Biquad('bp', 4200 + r() * 800, 0.8), hp = new Biquad('hp', 2000);
+      for (let i = 0; i < s.length; i++) s[i] = hp.run(bp.run(r() * 2 - 1)) * Math.min(1, i / ms(6)) * Math.exp(-i / ms(35));
+      peakNorm(s, 1);
+      put(bed, t, s, lv * [0.5, 0.25, 0.38, 0.25][k % 4]);
+    }
+  }
+  // Nappe : verre chanté, trois voix ; coupe-bas à 150 Hz.
+  {
+    const hp = new Biquad('hp', 150, 0.7);
+    const ph = [0, 0, 0, 0, 0, 0];
+    const base = [note('D4'), note('F#4'), note('A4')];
+    for (let i = 0; i < len; i++) {
+      const t = i / SR;
+      const lv = pad(t);
+      let v = 0;
+      if (lv > 0) {
+        const tr = 2 ** (pitchAt(t) / 12), b = brightAt(t);
+        const gains = [1, v2(t), v3(t)];
+        for (let k = 0; k < 3; k++) {
+          if (gains[k] <= 0) continue;
+          const f = base[k] * tr * (1 + 0.0015 * Math.sin(TAU * (4.6 + k * 0.4) * t));
+          ph[k] += TAU * f / SR;
+          ph[k + 3] += TAU * f * 1.0021 / SR; // battement du verre
+          v += gains[k] * (Math.sin(ph[k]) + 0.6 * Math.sin(ph[k + 3]) + b * Math.sin(2 * ph[k]) + b * 0.3 * Math.sin(3 * ph[k]));
+        }
+        v *= lv * 0.12 * (0.92 + 0.08 * Math.sin(TAU * 0.4 * t));
+      }
+      bed[i] += hp.run(v);
+    }
+  }
+  for (let i = 0; i < len; i++) bed[i] *= duck(i / SR);
+  return bed;
 }
+
+// Ambiance de pièce calme le soir : plus présente avant l'entrée du fond et après la cloche finale.
+function ambienceFor(cut, len) {
+  const amb = new Float32Array(len);
+  const r = rng(5), lp = new Biquad('lp', 1800), hp = new Biquad('hp', 90);
+  const bedIn = cut.bedIn ?? at(113), bell = cut.bell ?? at(1763), end = cut.duration;
+  const lv = auto([[0, 0.022], [bedIn, 0.022], [bedIn + 1.25, 0.012], [bell, 0.012], [bell + 0.25, 0.02], [end - 0.6, 0.02], [end, 0]]);
+  for (let i = 0; i < len; i++) amb[i] = hp.run(lp.run(r() * 2 - 1)) * lv(i / SR) * 3;
+  return amb;
+}
+
 
 // ---------- mix, normalisation, export ----------
 
 const BED_GAIN = db(-9); // le fond reste 8 à 10 dB sous les bruitages
-const mix = new Float32Array(LEN);
-for (let i = 0; i < LEN; i++) {
-  const fade = Math.min(1, (LEN - i) / ms(300));
-  fx[i] *= fade; bed[i] *= fade * BED_GAIN; amb[i] *= fade;
-  mix[i] = fx[i] + bed[i] + amb[i];
-}
+
 
 function wav(file, data) {
   const b = Buffer.alloc(44 + data.length * 2);
@@ -462,6 +543,20 @@ function wav(file, data) {
   b.writeUInt32LE(SR, 24); b.writeUInt32LE(SR * 2, 28); b.writeUInt16LE(2, 32); b.writeUInt16LE(16, 34);
   b.write('data', 36); b.writeUInt32LE(data.length * 2, 40);
   for (let i = 0; i < data.length; i++) b.writeInt16LE(Math.round(clamp(data[i], -1, 1) * 32767), 44 + i * 2);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, b);
+}
+
+// Pistes séparées en WAV 32 bits flottants : au gain du mix mais avant le limiteur, elles dépassent
+// 0 dBFS sur les attaques ; le flottant les garde intactes, et leur somme refait le mix non limité.
+function wavFloat(file, data) {
+  const b = Buffer.alloc(58 + data.length * 4);
+  b.write('RIFF', 0); b.writeUInt32LE(50 + data.length * 4, 4); b.write('WAVE', 8);
+  b.write('fmt ', 12); b.writeUInt32LE(18, 16); b.writeUInt16LE(3, 20); b.writeUInt16LE(1, 22);
+  b.writeUInt32LE(SR, 24); b.writeUInt32LE(SR * 4, 28); b.writeUInt16LE(4, 32); b.writeUInt16LE(32, 34); b.writeUInt16LE(0, 36);
+  b.write('fact', 38); b.writeUInt32LE(4, 42); b.writeUInt32LE(data.length, 46);
+  b.write('data', 50); b.writeUInt32LE(data.length * 4, 54);
+  for (let i = 0; i < data.length; i++) b.writeFloatLE(data[i], 58 + i * 4);
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, b);
 }
@@ -498,25 +593,42 @@ function limit(data, ceil) {
   return out;
 }
 
-// Mise à −14 LUFS intégrés, crête ≤ −1 dBFS : deux passes (le limiteur retire un peu de loudness).
-const tmp = path.join(OUT, '_mesure.wav');
-wav(tmp, mix);
-const before = measure(tmp);
-let gain = db(-14 - before.I);
-let final;
-for (let pass = 0; pass < 6; pass++) {
-  final = limit(mix.map((v) => v * gain), db(-2.6)); // marge pour la crête réelle (suréchantillonnée)
-  wav(tmp, final);
-  const m = measure(tmp);
-  if (Math.abs(m.I + 14) < 0.2) break;
-  gain *= db(-14 - m.I);
+function build(cut) {
+  const len = Math.round(cut.duration * SR);
+  const { fx, n } = fxFor(cut, len);
+  const bed = bedFor(cut, len);
+  const amb = ambienceFor(cut, len);
+  const mix = new Float32Array(len);
+  for (let i = 0; i < len; i++) {
+    const fade = Math.min(1, (len - i) / ms(300));
+    fx[i] *= fade; bed[i] *= fade * BED_GAIN; amb[i] *= fade;
+    mix[i] = fx[i] + bed[i] + amb[i];
+  }
+  // Mise à −14 LUFS intégrés, crête ≤ −1 dBFS : deux passes (le limiteur retire un peu de loudness).
+  const tmp = path.join(OUT, '_mesure.wav');
+  wav(tmp, mix);
+  const before = measure(tmp);
+  let gain = db(-14 - before.I);
+  let final;
+  for (let pass = 0; pass < 6; pass++) {
+    final = limit(mix.map((v) => v * gain), db(-2.6)); // marge pour la crête réelle (suréchantillonnée)
+    wav(tmp, final);
+    const m = measure(tmp);
+    if (Math.abs(m.I + 14) < 0.2) break;
+    gain *= db(-14 - m.I);
+  }
+  for (const a of [fx, bed, amb]) for (let i = 0; i < a.length; i++) a[i] *= gain;
+  const sfx = cut.id === 'master' ? '' : `-${cut.id}`;
+  const file = path.join(OUT, `le-fil-temoin${sfx}.wav`);
+  wav(file, final);
+  wavFloat(path.join(OUT, `pistes${sfx}`, 'bruitages.wav'), fx);
+  wavFloat(path.join(OUT, `pistes${sfx}`, 'fond-sonore.wav'), bed);
+  wavFloat(path.join(OUT, `pistes${sfx}`, 'ambiance.wav'), amb);
+  fs.unlinkSync(tmp);
+  const after = measure(file);
+  console.log(`${cut.name} : ${n} bruitages posés · avant ${before.I} LUFS → ${after.I} LUFS intégrés, crête ${after.TP} dBFS`);
+  console.log(`→ ${path.relative(ROOT, file)} + pistes séparées dans pistes${sfx}/ (bruitages, fond sonore, ambiance)`);
 }
-for (const a of [fx, bed, amb]) for (let i = 0; i < a.length; i++) a[i] *= gain;
-wav(path.join(OUT, 'le-fil-temoin.wav'), final);
-wav(path.join(OUT, 'pistes', 'bruitages.wav'), fx);
-wav(path.join(OUT, 'pistes', 'fond-sonore.wav'), bed);
-wav(path.join(OUT, 'pistes', 'ambiance.wav'), amb);
-fs.unlinkSync(tmp);
-const after = measure(path.join(OUT, 'le-fil-temoin.wav'));
-console.log(`${FX.length} bruitages posés · avant ${before.I} LUFS → ${after.I} LUFS intégrés, crête ${after.TP} dBFS`);
-console.log(`→ ${path.relative(ROOT, path.join(OUT, 'le-fil-temoin.wav'))} + pistes séparées (bruitages, fond sonore, ambiance)`);
+
+const only = process.argv[2];
+for (const cut of only ? [cutOf(only)] : Object.values(CUTS)) build(cut);

@@ -2,10 +2,12 @@
 //
 // Balisage d'une ligne :
 //   "! " grand titre · "# " titre d'étape · "~ " sous-titre · "? " question
-//   "= " numéro de téléphone · "- " information
+//   "= " numéro de téléphone · "- " information · ". " mention en petit
 //   `…` JetBrains Mono (numéros d'étape, « 48 h », « 7 jours », téléphones)
 //   *…* mot souligné par la ligne (« réussite »)
 // Les retours à la ligne sont de la mise en page : le vocabulaire reste celui du flyer.
+// `wide` donne d'autres retours à la ligne pour la colonne de texte du 16:9, plus étroite.
+// Les horaires sont ceux du master ; `cuts` réserve un carton aux versions qui le posent (src/cuts.js).
 
 export const CARDS = [
   // ---- monde clair (fond crème) ----
@@ -30,10 +32,12 @@ export const CARDS = [
     en: ['Identity', 'Background', 'References', 'Interview'] },
   { id: 'T4', in: 29.4, out: 34.2, world: 'page', slot: 'topNarrow',
     fr: ['# `04` · Séance d\'essai à domicile,', '~ avant tout engagement de longue durée'],
-    en: ['# `04` · Trial session at home,', '~ before any long-term commitment'] },
+    en: ['# `04` · Trial session at home,', '~ before any long-term commitment'],
+    wide: { fr: ['# `04` · Séance d\'essai', '# à domicile,', '~ avant tout engagement', '~ de longue durée'] } },
   { id: 'T5b', in: 38.75, out: 41.8, world: 'page', slot: 'top',
     fr: ['# `05` · Un bilan écrit chaque mois'],
-    en: ['# `05` · A written report every month'] },
+    en: ['# `05` · A written report every month'],
+    wide: { fr: ['# `05` · Un bilan écrit', '# chaque mois'], en: ['# `05` · A written report', '# every month'] } },
   { id: 'T5c', in: 40.0, out: 41.8, world: 'page', slot: 'lower',
     fr: ['? Indisponibilité ou insatisfaction ?'],
     en: ['? Tutor unavailable or not the right fit?'] },
@@ -42,7 +46,11 @@ export const CARDS = [
     en: ['# Guaranteed replacement', '~ another specialist is proposed'] },
   { id: 'T6', in: 45.3, out: 49.4, world: 'page', slot: 'top',
     fr: ['# Paiement mensuel', '# MTN MoMo · Orange Money', '~ prix unique, sans frais cachés'],
-    en: ['# Monthly payment', '# MTN MoMo · Orange Money', '~ one price, no hidden fees'] },
+    en: ['# Monthly payment', '# MTN MoMo · Orange Money', '~ one price, no hidden fees'],
+    wide: {
+      fr: ['# Paiement mensuel', '# MTN MoMo', '# Orange Money', '~ prix unique, sans frais cachés'],
+      en: ['# Monthly payment', '# MTN MoMo', '# Orange Money', '~ one price, no hidden fees'],
+    } },
 
   // ---- monde sombre (plan 7) ----
   { id: 'T7', in: 52.5, out: 56.8, world: 'dark', slot: 'top', stack: 'slogan',
@@ -64,6 +72,11 @@ export const CARDS = [
   { id: 'T8r', in: 58.75, out: 61, world: 'dark', slot: 'bottom', type: 'signature',
     fr: ['Réponse sous `48 h`'],
     en: ['Reply within `48 h`'] },
+
+  // ---- version courte : T6 passe en petit sur le carton final (section 9) ----
+  { id: 'T6s', in: 56.875, out: 61, world: 'dark', slot: 'top', stack: 'contact', cuts: ['30s'],
+    fr: ['. Paiement mensuel MTN MoMo · Orange Money — prix unique, sans frais cachés'],
+    en: ['. Monthly payment MTN MoMo · Orange Money — one price, no hidden fees'] },
 ];
 
 // Étiquettes posées dans l'illustration (elles suivent la caméra).
@@ -80,4 +93,12 @@ export const SLOTS = {
   topNarrow: { x: 108, y: 216, w: 770 },
   lower: { x: 108, y: 1540, w: 864 },
   bottom: { x: 108, y: 1576, w: 864 },
+};
+
+// Adaptation 16:9 (1920 × 1080) : une colonne de texte à gauche, l'image à droite ; mêmes marges de 10 %.
+export const SLOTS_WIDE = {
+  top: { x: 192, y: 150, w: 680 },
+  topNarrow: { x: 192, y: 150, w: 680 },
+  lower: { x: 192, y: 700, w: 680 },
+  bottom: { x: 192, y: 858, w: 680 },
 };

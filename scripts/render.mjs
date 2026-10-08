@@ -3,6 +3,9 @@
 //   node scripts/render.mjs                      master FR 1080 × 1920, son témoin
 //   node scripts/render.mjs --lang en            version anglaise
 //   node scripts/render.mjs --size 720x1280      diffusion légère (WhatsApp)
+//   node scripts/render.mjs --cut 30s --size 720x1280   version courte 30 s (section 9)
+//   node scripts/render.mjs --cut 64s            variante 64 s, carton final tenu 7 s
+//   node scripts/render.mjs --format 16:9        adaptation 16:9, 1920 × 1080
 //   node scripts/render.mjs --no-text            export sans texte incrusté
 //   node scripts/render.mjs --stills             images-clés en PNG (out/stills)
 //   node scripts/render.mjs --stills 188,338,975 images choisies
@@ -13,7 +16,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { serve } from './serve.mjs';
-import { FRAMES, FPS, SYNC } from '../src/timeline.js';
+import { FPS } from '../src/timeline.js';
+import { cutOf, syncFor, segments } from '../src/cuts.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const argv = process.argv.slice(2);
@@ -24,22 +28,27 @@ const arg = (name, def) => {
   return v === undefined || v.startsWith('--') ? true : v;
 };
 const lang = arg('lang', 'fr');
-const [width, height] = String(arg('size', '1080x1920')).split('x').map(Number);
+const wide = ['16:9', '16x9'].includes(String(arg('format', '9:16')));
+const cut = cutOf(arg('cut', 'master'));
+const FRAMES = Math.round(cut.duration * FPS);
+const SYNC = syncFor(cut);
+const [width, height] = String(arg('size', wide ? '1920x1080' : '1080x1920')).split('x').map(Number);
 const text = !argv.includes('--no-text');
 const audioOn = !argv.includes('--no-audio');
 const jobs = Number(arg('jobs', 4));
 const from = Number(arg('from', 0));
 const to = Number(arg('to', FRAMES));
 const stills = arg('stills', false);
-const light = width < 1080;
-const suffix = `${lang}${text ? '' : '-sans-texte'}-${width}x${height}`;
+const light = Math.min(width, height) < 1080;
+const suffix = `${lang}${cut.id === 'master' ? '' : '-' + cut.id}${text ? '' : '-sans-texte'}-${width}x${height}`;
 const out = arg('out', path.join(ROOT, 'out', `le-fil-${suffix}.mp4`));
-const AUDIO = path.join(ROOT, 'out', 'audio', 'le-fil-temoin.wav');
+// Le 16:9 reprend le son de sa version : seul le cadre change.
+const AUDIO = path.join(ROOT, 'out', 'audio', `le-fil-temoin${cut.id === 'master' ? '' : '-' + cut.id}.wav`);
 
 fs.mkdirSync(path.dirname(out), { recursive: true });
 
 const server = await serve(0);
-const url = `http://127.0.0.1:${server.address().port}/index.html?render=1&lang=${lang}&text=${text ? 1 : 0}&scale=${width / 1080}`;
+const url = `http://127.0.0.1:${server.address().port}/index.html?render=1&lang=${lang}&text=${text ? 1 : 0}&cut=${cut.id}&format=${wide ? '16x9' : '9x16'}&scale=${width / (wide ? 1920 : 1080)}`;
 const browser = await chromium.launch();
 
 async function openPage() {
@@ -60,8 +69,13 @@ async function shot(page, frame, type = 'png') {
 
 try {
   if (stills) {
+    // par défaut : images-clés du master, ou pour une version, les deux côtés de chaque coupe et une image par seconde
+    const defaults = cut.id === 'master'
+      ? [0, 30, 56, 80, 100, 150, 188, 240, 300, 330, 460, 540, 600, 700, 780, 830, 870, 890, 920, 960, 990, 1020, 1060, 1110, 1150, 1180, 1230, 1280, 1330, 1380, 1420, 1470, 1488, 1505, 1540, 1600, 1650, 1720, 1799]
+      : [...segments(cut).flatMap((x) => [Math.ceil(x.at * FPS), Math.ceil(x.end * FPS) - 1]),
+        ...Array.from({ length: Math.ceil(cut.duration) }, (_, i) => i * FPS + 15)];
     const list = stills === true
-      ? [...new Set([0, 30, 56, 80, 100, 150, 188, 240, 300, 330, 460, 540, 600, 700, 780, 830, 870, 890, 920, 960, 990, 1020, 1060, 1110, 1150, 1180, 1230, 1280, 1330, 1380, 1420, 1470, 1488, 1505, 1540, 1600, 1650, 1720, 1799])]
+      ? [...new Set(defaults.filter((f) => f >= 0 && f < FRAMES))].sort((a, b) => a - b)
       : String(stills).split(',').map(Number);
     const dir = path.join(ROOT, 'out', 'stills', suffix);
     fs.mkdirSync(dir, { recursive: true });
@@ -72,7 +86,7 @@ try {
     console.log(`${list.length} images → ${path.relative(ROOT, dir)}`);
   } else {
     const withAudio = audioOn && fs.existsSync(AUDIO);
-    if (audioOn && !withAudio) console.warn('Son témoin absent (npm run audio) : rendu muet.');
+    if (audioOn && !withAudio) console.warn(`Son témoin absent (${path.relative(ROOT, AUDIO)}, npm run audio) : rendu muet.`);
     const ff = [
       '-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(FPS), '-c:v', PNG ? 'png' : 'mjpeg', '-i', '-',
       ...(withAudio ? ['-ss', String(from / FPS), '-t', String((to - from) / FPS), '-i', AUDIO] : []),

@@ -581,8 +581,9 @@ export function renderDark(t, opt) {
   if (t < 49.2) return '';
   const drift = 1 + 0.03 * prog(t, 50, 60);
   let s = '';
-  s += el('rect', { x: 0, y: 0, width: W, height: H, fill: C.deep });
-  s += el('rect', { x: -60, y: -60, width: W + 120, height: H + 120, fill: 'url(#blueprint)' });
+  // fond débordant largement le cadre 9:16 : l'adaptation 16:9 en montre les côtés
+  s += el('rect', { x: -1500, y: 0, width: W + 3000, height: H, fill: C.deep });
+  s += el('rect', { x: -1560, y: -60, width: W + 3120, height: H + 120, fill: 'url(#blueprint)' });
   let w = '';
   BRAID.forEach((f) => { w += trace(f, t, 49.95, 50.3, { dark: true, w: 7, op: 1 - 0.6 * prog(t, 50.6, 51.4) }, easeInOut); });
   const k = trajK(t);
@@ -604,8 +605,30 @@ export function renderDark(t, opt) {
     }, `0${i + 1}`);
   });
   s += g({ transform: `translate(540 960) scale(${drift}) translate(-540 -960)` }, w);
-  s += corners({ x: 60, y: 140, w: W - 120, h: H - 280, len: 54, width: 4, op: 0.55 * ease(prog(t, 50.3, 51.0)) });
+  // coins du cadre 9:16 (en 16:9, le cadre de l'écran les porte : src/stage.js)
+  if (opt.format !== '16:9') s += corners({ x: 60, y: 140, w: W - 120, h: H - 280, len: 54, width: 4, op: darkCorners(t) });
   return s;
+}
+
+export const darkCorners = (t) => 0.55 * ease(prog(t, 50.3, 51.0));
+
+// ---------- adaptation 16:9 ----------
+
+// L'image 16:9 est une fenêtre sur le cadre 9:16 : centre vertical cy et échelle s, plan par plan,
+// pour garder l'action entière à droite de la colonne de texte.
+export const WIDE = { s: 0.9, ax: 1440 }; // le point (540, cy) du cadre 9:16 tombe en (ax, 540) à l'écran
+export function wideView(t) {
+  const cy = keys(t, [
+    [0, 1250], [3.75, 1250], [6.5, 1120], // page, puis recul jusqu'à la table
+    [9.45, 1120], [10.75, 1040], // cercle des 48 h
+    [16.3, 1040], [17.55, 1180], // trois répétiteurs
+    [26.875, 1180], [28.05, 1000], [28.7, 1180], [29.375, 1180], [29.95, 960], // maison, porte
+    [30.25, 1000], [30.55, 1000], [31.25, 1060], [32.5, 1000], [34.375, 700], // intérieur, page, franchissement
+    [35.05, 1000], [43.75, 1000], [44.9, 1090], // suivi, téléphone
+    [49.25, 1090], [50.0, 1150], // Trajectoire
+  ]);
+  const { s, ax } = WIDE;
+  return { cy, s, viewBox: [540 - ax / s, cy - 540 / s, 1920 / s, 1080 / s] };
 }
 
 // ---------- assemblage du monde clair ----------

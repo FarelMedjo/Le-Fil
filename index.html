@@ -31,6 +31,7 @@
   #sync div { display: grid; grid-template-columns: 64px 44px 1fr; gap: 6px; padding: 5px 18px; font-size: 12px; cursor: pointer; border-bottom: 1px solid #1B2135; }
   #sync div:hover { background: #1B2238; }
   #sync div.on { background: #23304A; }
+  #sync div.cut { color: var(--lime); font-weight: 600; }
   #sync .t { font-family: 'JetBrains Mono', monospace; color: var(--muted); }
   #sync .s { color: var(--muted); grid-column: 3; }
   .warn { color: #FFB86B; font-size: 12px; padding: 0 18px; }
@@ -43,7 +44,7 @@
   <aside id="panel">
     <header>
       <h1>TutorLab — « Le Fil »</h1>
-      <div class="sub">Animatique 60 s · 9:16 · 30 i/s · 96 BPM · son témoin de synthèse</div>
+      <div class="sub" id="sub">Animatique · 30 i/s · 96 BPM · son témoin de synthèse</div>
     </header>
     <div class="row">
       <button id="play" class="primary">Lecture</button>
@@ -53,6 +54,10 @@
       <button id="nextBeat" title="Temps suivant (Maj+→)">+♩</button>
     </div>
     <div class="row"><input id="scrub" type="range" min="0" max="1799" value="0"></div>
+    <div class="row">
+      <select id="cut"><option value="master">Master 60 s</option><option value="30s">Version courte 30 s</option><option value="64s">Variante 64 s</option></select>
+      <select id="format"><option value="9:16">9:16</option><option value="16:9">16:9</option></select>
+    </div>
     <div class="row"><span class="tc" id="tc">0:00,00</span><span class="meta" id="meta"></span></div>
     <div class="row">
       <select id="lang"><option value="fr">Français</option><option value="en">English</option></select>
@@ -67,13 +72,16 @@
 </div>
 <audio id="audio" preload="auto"></audio>
 <script type="module">
-import { createStage } from './src/stage.js';
-import { FRAMES, FPS, BEAT, SYNC, PLANS, timecode } from './src/timeline.js';
+import { createStage, FORMATS } from './src/stage.js';
+import { FPS, BEAT, PLANS, timecode } from './src/timeline.js';
+import { cutOf, syncFor, beatsOf, masterTime, segments, clock } from './src/cuts.js';
 
 const q = new URLSearchParams(location.search);
 const renderMode = q.has('render');
 const root = document.getElementById('root');
-const S = createStage(root, { lang: q.get('lang') || 'fr', text: q.get('text') !== '0', guides: q.get('guides') === '1' });
+const format = q.get('format') === '16x9' || q.get('format') === '16:9' ? '16:9' : '9:16';
+const S = createStage(root, { lang: q.get('lang') || 'fr', text: q.get('text') !== '0', guides: q.get('guides') === '1', cut: cutOf(q.get('cut')).id, format });
+const framesOf = () => Math.round(cutOf(S.options.cut).duration * FPS);
 
 // Le rendu attend que les polices soient chargées : sinon les textes seraient mesurés avec une police de repli.
 const fontsReady = Promise.all([
@@ -87,39 +95,59 @@ if (renderMode) {
   document.body.classList.add('render');
   const scale = Number(q.get('scale') || 1);
   root.style.transform = `scale(${scale})`;
-  window.LeFil = { FRAMES, ready: fontsReady.then(() => true), renderFrame: (f) => S.renderFrame(f) };
+  window.LeFil = { FRAMES: framesOf(), ready: fontsReady.then(() => true), renderFrame: (f) => S.renderFrame(f) };
 } else {
   const audio = document.getElementById('audio');
-  const src = `out/audio/le-fil-temoin.wav`;
-  fetch(src, { method: 'HEAD' }).then((r) => {
-    if (r.ok) audio.src = src;
-    else document.getElementById('warn').textContent = 'Son témoin absent : lancer « npm run audio ».';
-  });
-  let frame = Number(q.get('f') || 0), playing = false, t0 = 0, f0 = 0;
   const $ = (id) => document.getElementById(id);
+  // Le 16:9 garde le son du master : même montage, même durée.
+  const loadAudio = () => {
+    const id = S.options.cut;
+    const src = `out/audio/le-fil-temoin${id === 'master' ? '' : '-' + id}.wav`;
+    $('warn').textContent = '';
+    audio.removeAttribute('src');
+    fetch(src, { method: 'HEAD' }).then((r) => {
+      if (r.ok) audio.src = src;
+      else $('warn').textContent = 'Son témoin absent : lancer « npm run audio ».';
+    });
+  };
+  loadAudio();
+  let frame = Number(q.get('f') || 0), playing = false, t0 = 0, f0 = 0;
+  let FRAMES = framesOf(), SYNC = [];
   const fit = () => {
+    const { w, h } = FORMATS[S.options.format];
     const vp = $('viewport').getBoundingClientRect();
-    const s = Math.min((vp.width - 32) / 1080, (vp.height - 32) / 1920);
+    const s = Math.min((vp.width - 32) / w, (vp.height - 32) / h);
     root.style.transform = `scale(${s})`;
-    root.style.width = `${1080 * s}px`; root.style.height = `${1920 * s}px`;
+    root.style.width = `${w * s}px`; root.style.height = `${h * s}px`;
   };
   addEventListener('resize', fit); fit();
 
-  $('sync').innerHTML = SYNC.map((r, i) => `<div data-f="${r.frame}" data-i="${i}"><span class="t">${r.time}</span><span class="t">${r.frame}</span><span>${r.anim}</span><span class="s">${r.sfx !== '—' ? '♪ ' + r.sfx : ''}${r.bed !== '—' ? ' · fond : ' + r.bed : ''}</span></div>`).join('');
+  function listSync() {
+    const cut = cutOf(S.options.cut);
+    FRAMES = framesOf();
+    SYNC = syncFor(cut);
+    $('scrub').max = FRAMES - 1;
+    $('sub').textContent = `${cut.name} · ${S.options.format} · ${beatsOf(cut)} temps · 30 i/s · 96 BPM · son témoin de synthèse`;
+    $('sync').innerHTML = SYNC.map((r, i) => `<div data-f="${r.frame}" data-i="${i}"${r.cut ? ' class="cut"' : ''}><span class="t">${r.time}</span><span class="t">${r.frame}</span><span>${r.anim}</span><span class="s">${r.sfx !== '—' ? '♪ ' + r.sfx : ''}${r.bed !== '—' ? ' · fond : ' + r.bed : ''}</span></div>`).join('');
+  }
+  listSync();
   $('sync').addEventListener('click', (e) => { const d = e.target.closest('[data-f]'); if (d) seek(Number(d.dataset.f)); });
 
   function show() {
     S.renderFrame(frame);
-    const t = frame / FPS;
+    const cut = cutOf(S.options.cut);
+    const t = frame / FPS, m = masterTime(cut, t);
     $('tc').textContent = timecode(frame);
     const beat = Math.floor(t / BEAT + 1e-6);
-    const plan = PLANS.find((p) => t >= p.from && t < p.to) || PLANS[7];
-    $('meta').textContent = `image ${frame} · temps ${beat + 1}/96 · plan ${plan.id}`;
+    const plan = PLANS.find((p) => m >= p.from && m < p.to) || PLANS[7];
+    const seg = cut.id === 'master' ? null : segments(cut).filter((x) => t >= x.at - 1e-9).at(-1);
+    $('meta').textContent = `image ${frame} · temps ${beat + 1}/${beatsOf(cut)} · plan ${plan.id}${seg ? ` · master ${clock(Math.round(m * 1000) / 1000)}` : ''}`;
     if (!playing) $('scrub').value = frame;
     let cur = -1;
     SYNC.forEach((r, i) => { if (r.frame <= frame) cur = i; });
     const r = SYNC[cur];
-    $('now').innerHTML = `<b>Plan ${plan.id} — ${plan.name}</b><br>${r ? `${r.time} · ${r.anim}${r.sfx !== '—' ? `<br>♪ ${r.sfx}` : ''}${r.bed !== '—' ? `<br>Fond : ${r.bed}` : ''}` : ''}`;
+    const head = seg ? `${seg.name} — plan ${plan.id}` : `Plan ${plan.id} — ${plan.name}`;
+    $('now').innerHTML = `<b>${head}</b><br>${r ? `${r.time} · ${r.anim}${r.sfx !== '—' ? `<br>♪ ${r.sfx}` : ''}${r.bed !== '—' ? `<br>Fond : ${r.bed}` : ''}` : ''}`;
     document.querySelectorAll('#sync .on').forEach((x) => x.classList.remove('on'));
     const row = document.querySelector(`#sync [data-i="${cur}"]`);
     if (row) { row.classList.add('on'); if (playing) row.scrollIntoView({ block: 'nearest' }); }
@@ -150,6 +178,10 @@ if (renderMode) {
   $('nextBeat').onclick = () => seek(beatFrame(1));
   $('scrub').oninput = (e) => seek(Number(e.target.value));
   $('lang').value = S.options.lang;
+  $('cut').value = S.options.cut;
+  $('format').value = S.options.format;
+  $('cut').onchange = (e) => { if (playing) toggle(); S.setOptions({ cut: e.target.value }); listSync(); loadAudio(); seek(Math.min(frame, FRAMES - 1)); };
+  $('format').onchange = (e) => { S.setOptions({ format: e.target.value }); fit(); show(); };
   $('lang').onchange = (e) => { S.setOptions({ lang: e.target.value }); show(); };
   $('text').onchange = (e) => { S.setOptions({ text: e.target.checked }); show(); };
   $('guides').onchange = (e) => { S.setOptions({ guides: e.target.checked }); show(); };

@@ -2,7 +2,7 @@
   "name": "le-fil",
   "version": "0.1.0",
   "private": true,
-  "description": "TutorLab — « Le Fil » : animatique du spot motion design de 60 s (9:16), calée sur la feuille de synchronisation.",
+  "description": "TutorLab — « Le Fil » : animatique du spot motion design de 60 s (9:16), calée sur la feuille de synchronisation, avec sa version courte de 30 s, sa variante de 64 s et son adaptation 16:9.",
   "type": "module",
   "scripts": {
     "audio": "node scripts/build-audio.mjs",
@@ -10,6 +10,9 @@
     "render": "node scripts/render.mjs",
     "render:en": "node scripts/render.mjs --lang en",
     "render:light": "node scripts/render.mjs --size 720x1280",
+    "render:30s": "node scripts/render.mjs --cut 30s --size 720x1280",
+    "render:64s": "node scripts/render.mjs --cut 64s",
+    "render:16x9": "node scripts/render.mjs --format 16:9",
     "stills": "node scripts/render.mjs --stills"
   },
   "license": "UNLICENSED",

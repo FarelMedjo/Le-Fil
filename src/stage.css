@@ -56,3 +56,28 @@
 .signature .logo { height: 76px; width: auto; display: block; }
 .signature .pill { font: 600 38px/1 'Inter', sans-serif; color: var(--ink); background: var(--lime); border-radius: 999px; padding: 22px 28px; white-space: nowrap; }
 .signature .pill .mono { font-weight: 700; }
+.note { font: 500 36px/1.3 'Inter', sans-serif; color: var(--mist); }
+.dark .slot .note { margin-top: 4px; }
+
+/* ---- adaptation 16:9 : colonne de texte à gauche, l'image à droite ---- */
+.wide .layer .frame { position: absolute; inset: 0; }
+.wide .page .panel { position: absolute; left: 0; top: 0; bottom: 0; width: 1010px; pointer-events: none;
+  background: linear-gradient(90deg, var(--cream) 0, var(--cream) 960px, rgba(250, 250, 247, 0) 1010px); }
+.wide .guides { left: 192px; top: 108px; width: 1536px; height: 864px; }
+.wide .slot { gap: 12px; }
+.wide .hero { font-size: 76px; }
+.wide .title { font-size: 54px; line-height: 1.1; }
+.wide .sub { font-size: 38px; }
+.wide .question { font-size: 46px; }
+.wide .num { font-size: 64px; }
+.wide .info { font-size: 34px; }
+.wide .note { font-size: 30px; }
+.wide .dark .sub { font-size: 42px; }
+.wide .dark .slot { gap: 20px; }
+.wide .hl .ul { bottom: -14px; }
+.wide .checks { gap: 14px 20px; margin-top: 16px; }
+.wide .chk { font-size: 34px; gap: 14px; }
+.wide .chk svg { width: 44px; height: 44px; }
+.wide .signature { justify-content: flex-start; gap: 28px; }
+.wide .signature .logo { height: 60px; }
+.wide .signature .pill { font-size: 30px; padding: 18px 24px; }
