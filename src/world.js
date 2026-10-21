@@ -52,7 +52,9 @@ export const V = {
   table: view([60, 130], 2.7, NB.r),
   phone: phoneScreenTop(PHONE_HELD, 9.4),
   cards: view([0, -238 + (H / 2 - 620) / 4.2], 4.2, -1.5),
+  cardsClose: view([2, -238 + (H / 2 - 620) / 4.2 + 4], 4.42, -0.6),
   trial: pageView(88, 112, 8.6, 1060),
+  trialWide: pageView(86, 132, 5.4, 1000), // le déclic : on recule pour voir les deux bras
   month: view(nbPoint([0, 110]), 3.05, NB.r),
   report: view([REPORT_SPOT.x + 30, REPORT_SPOT.y - 10], 5.2, NB.r),
   replace: view([0, -238 + (H / 2 - 620) / 4.2], 4.2, -1.5),
@@ -66,8 +68,10 @@ const MOVES = [
   [5.0, 6.05, V.hookClose, V.table, easeInOut],
   [7.05, 8.35, V.table, V.phone, easeInOut],
   [16.0, 16.95, V.phone, V.cards, easeInOut],
-  [23.5, 24.6, V.cards, V.trial, easeInOut],
-  [31.6, 32.5, V.trial, V.month, easeInOut],
+  [17.6, 23.5, V.cards, V.cardsClose, (k) => k], // lente poussée pendant que les fiches restent posées
+  [23.5, 24.6, V.cardsClose, V.trial, easeInOut],
+  [30.32, 31.0, V.trial, V.trialWide, easeOut],
+  [31.6, 32.5, V.trialWide, V.month, easeInOut],
   [35.7, 36.55, V.month, V.report, easeInOut],
   [39.55, 40.2, V.report, V.replace, easeInOut],
   [43.75, 45.1, V.replace, V.phone2, easeInOut],
@@ -215,12 +219,12 @@ export function parentHand(t) {
 // Le téléphone : posé, pris en main, tenu ; reposé à droite pendant la séance d'essai.
 export function phonePose(t) {
   const lift1 = easeInOut(prog(t, 7.45, 8.3));
-  const down1 = easeInOut(prog(t, 23.6, 24.4));
+  const down1 = easeInOut(prog(t, 17.7, 18.5)); // reposé dès que les fiches sont sur la table
   const lift2 = easeInOut(prog(t, 44.0, 44.8));
   const down2 = easeInOut(prog(t, 48.0, 48.6));
   const rest = t < 16 ? PHONE_REST : PHONE_REST2;
   let k = 0;
-  if (t < 24.4) k = lift1 * (1 - down1);
+  if (t < 24) k = lift1 * (1 - down1);
   else k = lift2 * (1 - down2);
   return {
     x: lerp(rest.x, PHONE_HELD.x, k), y: lerp(rest.y, PHONE_HELD.y, k), r: angleLerp(rest.r, PHONE_HELD.r, k),
@@ -322,12 +326,12 @@ export function tutorHand(t, lang) {
 // Check des poings (contact à 0:31,0).
 export const BUMP = 31.0;
 function fistBump(t, who) {
-  const meet = P(84, 176);
+  const meet = P(86, 166);
   const app = easeInOut(prog(t, 30.4, BUMP));
   const ret = easeIn(prog(t, BUMP + 0.08, BUMP + 0.75));
   const squash = t >= BUMP ? Math.max(0, bounce(t - BUMP, 5, 12)) : 0;
   const rise = Math.sin(Math.PI * clamp(prog(t, 30.4, BUMP + 0.75)));
-  const s = (who === 'child' ? CHILD_S : ADULT_S) * (1 + 0.2 * rise);
+  const s = (who === 'child' ? CHILD_S : ADULT_S) * (1 + 0.07 * rise);
   const r = who === 'child' ? -38 : 52;
   const front = [0, -112];
   // en dehors du contact, chaque poing recule le long de son bras
@@ -339,7 +343,7 @@ function fistBump(t, who) {
   if (ret >= 1) return null;
   return { kind: who === 'child' ? 'child' : 'maths', pose: 'fist', ...pose, h: 26 + rise * 50 };
 }
-export const bumpBurst = (t) => (t >= BUMP && t < BUMP + 0.45 ? { at: P(84, 176), k: prog(t, BUMP, BUMP + 0.45) } : null);
+export const bumpBurst = (t) => (t >= BUMP && t < BUMP + 0.45 ? { at: P(86, 166), k: prog(t, BUMP, BUMP + 0.45) } : null);
 
 // Un mois en accéléré (0:32 → 0:36) : chaque page tournée, un spécialiste écrit.
 export const MONTH_WRITERS = [

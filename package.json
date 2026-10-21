@@ -15,7 +15,8 @@
     "render:30s": "node scripts/render.mjs --cut 30s --size 720x1280",
     "render:64s": "node scripts/render.mjs --cut 64s",
     "render:16x9": "node scripts/render.mjs --format 16:9",
-    "stills": "node scripts/render.mjs --stills"
+    "stills": "node scripts/render.mjs --stills",
+    "storyboard": "node scripts/storyboard.mjs"
   },
   "license": "UNLICENSED",
   "devDependencies": {

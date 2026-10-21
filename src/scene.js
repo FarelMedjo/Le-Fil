@@ -198,10 +198,11 @@ function finaleContent(t, opt) {
   const toL = LOGO.left.map((p) => logoPt(p, tg)), toR = LOGO.right.map((p) => logoPt(p, tg));
   const mixQ = (a, b) => a.map((p, i) => [lerp(p[0], b[i][0], k), lerp(p[1], b[i][1], k)]);
   const paper = mixColor('#FBFAF3', LOGO.page, k);
-  // le contenu des pages s'efface pendant que les formes se redressent
-  if (k < 0.5) s += g({ transform: camTransform(cam), opacity: n(1 - k * 2) }, notebookPlaced(49.5, lang, st, monthLayer(49.5, lang, st)));
-  const fade = clamp(k * 2.2);
-  s += g({ opacity: n(fade) }, poly(mixQ(leftQ, toL), { fill: paper }) + poly(mixQ(rightQ, toR), { fill: paper }));
+  // les deux pages, opaques dès le départ (elles recouvrent exactement celles du cahier), se redressent ;
+  // le cahier lui-même s'efface par-dessus en un tiers de la métamorphose
+  s += poly(mixQ(leftQ, toL), { fill: paper }) + poly(mixQ(rightQ, toR), { fill: paper });
+  const ghost = 1 - prog(k, 0, 0.32);
+  if (ghost > 0) s += g({ transform: camTransform(cam), opacity: n(ghost) }, notebookPlaced(49.5, lang, st, monthLayer(49.5, lang, st)));
   if (k >= 1) s += g({ opacity: 1 }, path(`M${n(logoPt([67.5, 86], tg)[0])} ${n(logoPt([67.5, 86], tg)[1])}V${n(logoPt([67.5, 134], tg)[1])}M${n(logoPt([80, 86], tg)[0])} ${n(logoPt([80, 86], tg)[1])}V${n(logoPt([80, 134], tg)[1])}`, { stroke: '#989AA2', 'stroke-width': n(1.2 * tg.s) }));
   // la tache de surligneur s'envole et devient le point
   const from = toScreen(nbWorld(HL_SPOT), cam);
@@ -210,6 +211,9 @@ function finaleContent(t, opt) {
   const arc = Math.sin(Math.PI * kd) * 160;
   const p = [lerp(from[0], to[0], kd) + arc * 0.4, lerp(from[1], to[1], kd) - arc];
   const rIn = lerp(10, LOGO.inner * tg.s, kd), rOut = LOGO.ring * tg.s * ease(prog(t, 50.1, 50.45));
+  // une fois formé, le point respire doucement, sur la mesure (2 s)
+  const breath = t > 50.45 && t < 54.5 ? 0.5 - 0.5 * Math.cos(((t - 50.45) / 2) * Math.PI * 2) : 0;
+  if (breath > 0) s += circle(p[0], p[1], LOGO.ring * tg.s * (1.6 + 0.5 * breath), { fill: 'url(#halo)', opacity: n(0.35 * breath) });
   if (rOut > 0) s += circle(p[0], p[1], rOut, { fill: LOGO.ringColor });
   if (kd < 1) s += circle(p[0], p[1], rIn * 2.4, { fill: 'url(#halo)', opacity: n(1 - kd) });
   s += circle(p[0], p[1], rIn, { fill: LIME });
