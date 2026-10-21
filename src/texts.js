@@ -68,7 +68,7 @@ export const SLOTS_WIDE = {
 
 export const TXT = {
   fr: {
-    ex2: 'Exercice 2', ex3: 'Exercice 3', solve: 'Résous :',
+    ex2: 'Exercice 2', ex3: 'Exercice 3', solve: 'Résous :', level: '3e',
     lesson: ['Équations du 1er degré', 'Pour isoler x, on fait la même', 'opération des deux côtés.', 'x + 3 = 7  donc  x = 7 − 3 = 4'],
     contact: 'TutorLab', online: 'en ligne', now: '21:04', typing: 'écrit…',
     msg: 'Bonsoir, ma fille est en 3e et elle bloque en maths. Vous pouvez nous aider ?',
@@ -85,7 +85,7 @@ export const TXT = {
     keyboard: ['azertyuiop', 'qsdfghjklm', 'wxcvbn'],
   },
   en: {
-    ex2: 'Exercise 2', ex3: 'Exercise 3', solve: 'Solve:',
+    ex2: 'Exercise 2', ex3: 'Exercise 3', solve: 'Solve:', level: 'Form 4',
     lesson: ['Linear equations', 'To isolate x, do the same', 'operation on both sides.', 'x + 3 = 7  so  x = 7 − 3 = 4'],
     contact: 'TutorLab', online: 'online', now: '21:04', typing: 'typing…',
     msg: 'Good evening, my daughter is in Form 4 and she is stuck in maths. Can you help us?',

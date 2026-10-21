@@ -78,7 +78,7 @@ function world(t, opt, cam) {
   const st = notebookState(t);
   let s = tablecloth();
   // décor
-  s += placed(textbook(lang === 'en' ? 'MATHS' : 'MATHS'), { ...BOOK, h: 5 });
+  s += placed(textbook('MATHS', T.level), { ...BOOK, h: 5 });
   s += placed(trousse(), { ...TROUSSE, h: 9 });
   s += placed(glass(), { ...GLASS, h: 30, shadowOp: 0.18 });
   // le cahier, ses outils posés

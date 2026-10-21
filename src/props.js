@@ -65,7 +65,7 @@ export function trousse() {
   return s;
 }
 
-export function textbook(title = 'MATHÉMATIQUES') {
+export function textbook(title = 'MATHS', level = '3e') {
   let s = '';
   s += rect(-95, -130, 190, 260, { rx: 3, fill: '#E8E2D2' });
   s += rect(-98, -133, 190, 260, { rx: 3, fill: '#2E7D6B' });
@@ -73,7 +73,7 @@ export function textbook(title = 'MATHÉMATIQUES') {
   s += poly([[-40, 40], [60, 40], [10, -50]], { fill: '#F2C14E', opacity: 0.9 });
   s += circle(40, -20, 30, { fill: '#F4EBD8', opacity: 0.85 });
   s += text(title, -70, -95, { size: 13, weight: 700, family: F.grotesk, fill: '#F4EBD8' });
-  s += text('3e', -70, -78, { size: 11, weight: 700, family: F.mono, fill: '#F2C14E' });
+  s += text(level, -70, -78, { size: 11, weight: 700, family: F.mono, fill: '#F2C14E' });
   return s;
 }
 
