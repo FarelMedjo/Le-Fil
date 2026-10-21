@@ -158,3 +158,51 @@ export function rand(seed) {
   let s = seed >>> 0 || 1;
   return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
 }
+
+// ---------- ajouts « Exercice 3 » ----------
+
+export const smooth = (k) => k * k * (3 - 2 * k);
+export const easeOut = cubicBezier(0.16, 1, 0.3, 1);
+export const easeOutBack = (k) => { const c = 1.70158; const x = k - 1; return 1 + (c + 1) * x * x * x + c * x * x; };
+// Impulsion amortie (rebond d'atterrissage) : 0 au départ, oscille et s'éteint.
+export const bounce = (t, f = 9, d = 7) => (t < 0 ? 0 : Math.exp(-d * t) * Math.sin(2 * Math.PI * f * t));
+export const angleLerp = (a, b, k) => a + ((((b - a) % 360) + 540) % 360 - 180) * k;
+export const rad = (deg) => (deg * Math.PI) / 180;
+export const rot = ([x, y], deg) => { const a = rad(deg), c = Math.cos(a), s = Math.sin(a); return [x * c - y * s, x * s + y * c]; };
+
+// Interpolation de zoom et de panoramique de van Wijk et Nuij (le chemin « le plus court » perçu) :
+// pour aller d'une vue à une autre éloignée, la caméra prend de la hauteur puis redescend.
+// Vue : [cx, cy, w] (centre et largeur visible, en unités du monde).
+export function zoomPath(a, b, rho = 1.4) {
+  const [ux0, uy0, w0] = a, [ux1, uy1, w1] = b;
+  const dx = ux1 - ux0, dy = uy1 - uy0, d2 = dx * dx + dy * dy, d1 = Math.sqrt(d2);
+  if (d2 < 1e-9) {
+    const S = Math.log(w1 / w0) / rho;
+    return (k) => [ux0, uy0, w0 * Math.exp(rho * k * S)];
+  }
+  const rho2 = rho * rho, rho4 = rho2 * rho2;
+  const b0 = (w1 * w1 - w0 * w0 + rho4 * d2) / (2 * w0 * rho2 * d1);
+  const b1 = (w1 * w1 - w0 * w0 - rho4 * d2) / (2 * w1 * rho2 * d1);
+  const r0 = Math.log(Math.sqrt(b0 * b0 + 1) - b0), r1 = Math.log(Math.sqrt(b1 * b1 + 1) - b1);
+  const S = (r1 - r0) / rho;
+  const cosh = (x) => ((x = Math.exp(x)) + 1 / x) / 2, sinh = (x) => ((x = Math.exp(x)) - 1 / x) / 2, tanh = (x) => ((x = Math.exp(2 * x)) - 1) / (x + 1);
+  return (k) => {
+    const s = k * S, c0 = cosh(r0), u = (w0 / (rho2 * d1)) * (c0 * tanh(rho * s + r0) - sinh(r0));
+    return [ux0 + u * dx, uy0 + u * dy, (w0 * c0) / cosh(rho * s + r0)];
+  };
+}
+
+// Mélange de couleurs hexadécimales.
+export function mixColor(a, b, k) {
+  const pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16);
+  const ch = (p, s) => (p >> s) & 255;
+  const c = [16, 8, 0].map((s) => Math.round(lerp(ch(pa, s), ch(pb, s), clamp(k))));
+  return '#' + c.map((v) => v.toString(16).padStart(2, '0')).join('');
+}
+
+// Bruit de valeur 1D lisse et déterministe (tremblés de caméra, de main).
+export function noise1(x, seed = 0) {
+  const h = (i) => { let s = (Math.imul(i, 374761393) + Math.imul(seed, 668265263)) >>> 0; s = Math.imul((s ^ (s >>> 13)) >>> 0, 1274126177) >>> 0; return ((s ^ (s >>> 16)) >>> 0) / 4294967296; };
+  const i = Math.floor(x), f = x - i, u = f * f * (3 - 2 * f);
+  return lerp(h(i), h(i + 1), u) * 2 - 1;
+}

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Le Fil — animatique</title>
+<title>Exercice 3 — aperçu</title>
 <link rel="stylesheet" href="src/stage.css">
 <style>
   :root { --bg: #0E1120; --panel: #151A2C; --line: #262D45; --txt: #E8ECF5; --muted: #8F97AD; --lime: #C8FF3E; }
@@ -43,8 +43,8 @@
   <div id="viewport"><div id="root"></div></div>
   <aside id="panel">
     <header>
-      <h1>TutorLab — « Le Fil »</h1>
-      <div class="sub" id="sub">Animatique · 30 i/s · 96 BPM · son témoin de synthèse</div>
+      <h1>TutorLab — « Exercice 3 »</h1>
+      <div class="sub" id="sub">30 i/s · 120 BPM · bande-son synthétisée</div>
     </header>
     <div class="row">
       <button id="play" class="primary">Lecture</button>
@@ -102,12 +102,12 @@ if (renderMode) {
   // Le 16:9 garde le son du master : même montage, même durée.
   const loadAudio = () => {
     const id = S.options.cut;
-    const src = `out/audio/le-fil-temoin${id === 'master' ? '' : '-' + id}.wav`;
+    const src = `out/audio/bande-son${id === 'master' ? '' : '-' + id}.wav`;
     $('warn').textContent = '';
     audio.removeAttribute('src');
     fetch(src, { method: 'HEAD' }).then((r) => {
       if (r.ok) audio.src = src;
-      else $('warn').textContent = 'Son témoin absent : lancer « npm run audio ».';
+      else $('warn').textContent = 'Bande-son absente : lancer « npm run audio ».';
     });
   };
   loadAudio();
@@ -127,7 +127,7 @@ if (renderMode) {
     FRAMES = framesOf();
     SYNC = syncFor(cut);
     $('scrub').max = FRAMES - 1;
-    $('sub').textContent = `${cut.name} · ${S.options.format} · ${beatsOf(cut)} temps · 30 i/s · 96 BPM · son témoin de synthèse`;
+    $('sub').textContent = `${cut.name} · ${S.options.format} · ${beatsOf(cut)} temps · 30 i/s · 120 BPM`;
     $('sync').innerHTML = SYNC.map((r, i) => `<div data-f="${r.frame}" data-i="${i}"${r.cut ? ' class="cut"' : ''}><span class="t">${r.time}</span><span class="t">${r.frame}</span><span>${r.anim}</span><span class="s">${r.sfx !== '—' ? '♪ ' + r.sfx : ''}${r.bed !== '—' ? ' · fond : ' + r.bed : ''}</span></div>`).join('');
   }
   listSync();
@@ -139,7 +139,7 @@ if (renderMode) {
     const t = frame / FPS, m = masterTime(cut, t);
     $('tc').textContent = timecode(frame);
     const beat = Math.floor(t / BEAT + 1e-6);
-    const plan = PLANS.find((p) => m >= p.from && m < p.to) || PLANS[7];
+    const plan = PLANS.find((p) => m >= p.from && m < p.to) || PLANS.at(-1);
     const seg = cut.id === 'master' ? null : segments(cut).filter((x) => t >= x.at - 1e-9).at(-1);
     $('meta').textContent = `image ${frame} · temps ${beat + 1}/${beatsOf(cut)} · plan ${plan.id}${seg ? ` · master ${clock(Math.round(m * 1000) / 1000)}` : ''}`;
     if (!playing) $('scrub').value = frame;

@@ -41,9 +41,9 @@ const to = Number(arg('to', FRAMES));
 const stills = arg('stills', false);
 const light = Math.min(width, height) < 1080;
 const suffix = `${lang}${cut.id === 'master' ? '' : '-' + cut.id}${text ? '' : '-sans-texte'}-${width}x${height}`;
-const out = arg('out', path.join(ROOT, 'out', `le-fil-${suffix}.mp4`));
+const out = arg('out', path.join(ROOT, 'out', `exercice-3-${suffix}.mp4`));
 // Le 16:9 reprend le son de sa version : seul le cadre change.
-const AUDIO = path.join(ROOT, 'out', 'audio', `le-fil-temoin${cut.id === 'master' ? '' : '-' + cut.id}.wav`);
+const AUDIO = path.join(ROOT, 'out', 'audio', `bande-son${cut.id === 'master' ? '' : '-' + cut.id}.wav`);
 
 fs.mkdirSync(path.dirname(out), { recursive: true });
 
@@ -71,7 +71,7 @@ try {
   if (stills) {
     // par défaut : images-clés du master, ou pour une version, les deux côtés de chaque coupe et une image par seconde
     const defaults = cut.id === 'master'
-      ? [0, 30, 56, 80, 100, 150, 188, 240, 300, 330, 460, 540, 600, 700, 780, 830, 870, 890, 920, 960, 990, 1020, 1060, 1110, 1150, 1180, 1230, 1280, 1330, 1380, 1420, 1470, 1488, 1505, 1540, 1600, 1650, 1720, 1799]
+      ? [27, 66, 108, 141, 195, 231, 279, 330, 372, 420, 474, 492, 534, 630, 690, 735, 798, 849, 891, 903, 930, 990, 1050, 1110, 1155, 1209, 1281, 1365, 1410, 1449, 1482, 1497, 1512, 1560, 1650, 1680, 1740, 1799]
       : [...segments(cut).flatMap((x) => [Math.ceil(x.at * FPS), Math.ceil(x.end * FPS) - 1]),
         ...Array.from({ length: Math.ceil(cut.duration) }, (_, i) => i * FPS + 15)];
     const list = stills === true
@@ -86,7 +86,7 @@ try {
     console.log(`${list.length} images → ${path.relative(ROOT, dir)}`);
   } else {
     const withAudio = audioOn && fs.existsSync(AUDIO);
-    if (audioOn && !withAudio) console.warn(`Son témoin absent (${path.relative(ROOT, AUDIO)}, npm run audio) : rendu muet.`);
+    if (audioOn && !withAudio) console.warn(`Bande-son absente (${path.relative(ROOT, AUDIO)}, npm run audio) : rendu muet.`);
     const ff = [
       '-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(FPS), '-c:v', PNG ? 'png' : 'mjpeg', '-i', '-',
       ...(withAudio ? ['-ss', String(from / FPS), '-t', String((to - from) / FPS), '-i', AUDIO] : []),
