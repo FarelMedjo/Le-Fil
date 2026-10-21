@@ -92,6 +92,7 @@
 .wide .guides { left: 192px; top: 108px; width: 1536px; height: 864px; }
 .wide .strip.hero { font-size: 84px; }
 .wide .strip.title { font-size: 58px; }
+.wide .strip.title.long { font-size: 46px; }
 .wide .strip.question { font-size: 56px; }
 .wide .strip.sub { font-size: 36px; }
 .wide .step { font-size: 38px; }

@@ -152,8 +152,8 @@ function monthLayer(t, lang, st) {
 }
 
 // ---------- caméra ----------
-export function camTransform(cam, w = W, h = H) {
-  return `translate(${w / 2} ${h / 2}) rotate(${n(-cam.r)}) scale(${n(cam.z)}) translate(${n(-cam.c[0])} ${n(-cam.c[1])})`;
+export function camTransform(cam, w = W, h = H, ax = w / 2) {
+  return `translate(${n(ax)} ${h / 2}) rotate(${n(-cam.r)}) scale(${n(cam.z)}) translate(${n(-cam.c[0])} ${n(-cam.c[1])})`;
 }
 const toScreen = ([x, y], cam, w = W, h = H) => {
   const p = rot([(x - cam.c[0]) * cam.z, (y - cam.c[1]) * cam.z], -cam.r);
@@ -171,17 +171,23 @@ const logoTarget = (t) => {
 };
 const logoPt = ([x, y], tg) => [tg.c[0] + (x - LOGO.center[0]) * tg.s, tg.c[1] + (y - LOGO.center[1]) * tg.s];
 
-function finale(t, opt) {
+// `frame` : cadre de sortie ; le contenu (dessiné en coordonnées du 9:16) y est posé en (ox, 0) à l'échelle sc.
+function finale(t, opt, frame = { w: W, h: H, ox: 0, sc: 1 }) {
   if (t < 49.0) return '';
-  const lang = opt.lang;
   const off = easeInOut(prog(t, 49.0, 49.55));
-  let s = rect(0, 0, W, H, { fill: DEEP, opacity: n(off) });
-  if (t >= 49.4) s += rect(0, 0, W, H, { fill: 'url(#blueprintPx)', opacity: n(prog(t, 49.6, 50.4)) });
+  let bg = rect(0, 0, frame.w, frame.h, { fill: DEEP, opacity: n(off) });
+  if (t >= 49.4) bg += rect(0, 0, frame.w, frame.h, { fill: 'url(#blueprintPx)', opacity: n(prog(t, 49.6, 50.4)) });
+  return bg + g({ transform: frame.sc === 1 && !frame.ox ? undefined : `translate(${n(frame.ox)} 0) scale(${frame.sc})` }, finaleContent(t, opt));
+}
+
+function finaleContent(t, opt) {
+  const lang = opt.lang;
+  let s = '';
   const cam = camera(49.5);
   const st = notebookState(49.5);
   if (t < 49.5) {
-    // seul le cahier reste éclairé
-    s += g({ transform: camTransform(cam) }, notebookPlaced(t, lang, st, monthLayer(t, lang, st)));
+    // seul le cahier reste éclairé (même caméra que la table, pour qu'il ne bouge pas sous le noir)
+    s += g({ transform: camTransform(camera(t)) }, notebookPlaced(t, lang, st, monthLayer(t, lang, st)));
     return s;
   }
   // métamorphose : les deux pages deviennent les deux pages du logo
@@ -227,13 +233,16 @@ import { FINAL_HL } from './month.js';
 const HL_SPOT = FINAL_HL;
 
 // ---------- image complète ----------
+// En 16:9, le cadre 9:16 du master (même hauteur de table) est posé à droite, son centre en x = 1290 :
+// la colonne de texte occupe la gauche, la table continue derrière elle.
+export const WIDE = { sc: H === 1920 ? 1080 / 1920 : 1, ax: 1290 };
 export function renderScene(t, opt, { w = W, h = H } = {}) {
   const cam = camera(t);
-  // en 16:9, le même cadrage montre la même hauteur de table, et plus de largeur
-  const z = w > h ? cam.z * (h / H) : cam.z;
-  const camW = { ...cam, z };
+  const wide = w > h;
+  const camW = wide ? { ...cam, z: cam.z * WIDE.sc } : cam;
+  const ax = wide ? WIDE.ax : w / 2;
   let s = '';
-  if (t < 49.5) s += g({ transform: camTransform(camW, w, h) }, world(t, opt, camW));
-  s += w > h ? g({ transform: `translate(${(w - W * h / H) / 2} 0) scale(${h / H})` }, finale(t, opt)) : finale(t, opt);
+  if (t < 49.5) s += g({ transform: camTransform(camW, w, h, ax) }, world(t, opt, camW));
+  s += finale(t, opt, wide ? { w, h, ox: WIDE.ax - (W / 2) * WIDE.sc, sc: WIDE.sc } : { w, h, ox: 0, sc: 1 });
   return s;
 }

@@ -43,7 +43,8 @@ const light = Math.min(width, height) < 1080;
 const suffix = `${lang}${cut.id === 'master' ? '' : '-' + cut.id}${text ? '' : '-sans-texte'}-${width}x${height}`;
 const out = arg('out', path.join(ROOT, 'out', `exercice-3-${suffix}.mp4`));
 // Le 16:9 reprend le son de sa version : seul le cadre change.
-const AUDIO = path.join(ROOT, 'out', 'audio', `bande-son${cut.id === 'master' ? '' : '-' + cut.id}.wav`);
+const audioOf = (l) => path.join(ROOT, 'out', 'audio', `bande-son${cut.id === 'master' ? '' : '-' + cut.id}${l === 'en' ? '-en' : ''}.wav`);
+const AUDIO = lang === 'en' && fs.existsSync(audioOf('en')) ? audioOf('en') : audioOf('fr');
 
 fs.mkdirSync(path.dirname(out), { recursive: true });
 

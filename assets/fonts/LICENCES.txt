@@ -285,3 +285,52 @@ DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
 
+
+
+=============================== écritures manuscrites (src/glyphs.js) ===============================
+Glyphes à trait unique extraits du paquet npm hersheytext 2.0.0 (licence MIT, Copyright (c) 2014 James T)
+par scripts/build-glyphs.mjs : « script » = Hershey Script 1-stroke, « print » = EMS Readability Italic.
+
+--- Hershey Script 1-stroke ---
+Font name: Hershey Script 1-stroke
+
+Originally prepared in 2011 and converted to SVG fonts
+in 2019 by Windell H. Oskay, www.evilmadscientist.com
+
+Contents adapted from emergent.unpythonic.net/software/hershey
+ by way of "Hershey Fonts in SVG" by Marty McGuire
+ http://www.thingiverse.com/thing:6168
+ 
+-------------------------------------------------------------------
+The Hershey Fonts are a set of vector fonts with a liberal license.
+
+USE RESTRICTION:
+    This distribution of the Hershey Fonts may be used by anyone for
+    any purpose, commercial or otherwise, providing that:
+        1. The following acknowledgements must be distributed with
+            the font data:
+            - The Hershey Fonts were originally created by Dr.
+                A. V. Hershey while working at the U. S.
+                National Bureau of Standards.
+            - The format of the Font data in this distribution
+                was originally created by
+                    James Hurt
+                    Cognition, Inc.
+                    900 Technology Park Drive
+                    Billerica, MA 01821
+                    (mit-eddie!ci-dandelion!hurt)
+        2. The font data in this distribution may be converted into
+            any other format *EXCEPT* the format distributed by
+            the U.S. NTIS where each point is described
+            in eight bytes as "xxx yyy:", where xxx and yyy are
+            the coordinate values as ASCII numbers.
+
+--- EMS Readability Italic (SIL Open Font License 1.1, texte de la licence ci-dessus) ---
+Font name:               EMS Readability Italic
+License:                 SIL Open Font License http://scripts.sil.org/OFL
+Created by:              Sheldon B. Michaels
+SVG font conversion by:  Windell H. Oskay
+A derivative of:         Source Sans Pro-Light
+Designer:                Paul D. Hunt, Adobe
+Link:                    http://www.adobe.com
+Google font page:        https://fonts.google.com/specimen/Source+Sans+Pro

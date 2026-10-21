@@ -16,6 +16,7 @@
 //
 //   node scripts/build-audio.mjs            les trois versions
 //   node scripts/build-audio.mjs 30s        une seule version
+//   node scripts/build-audio.mjs --en       version anglaise (les écritures changent : leurs sons aussi)
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -948,7 +949,7 @@ function build(cut, stems) {
     gain *= db(-14 - m.I);
   }
   fs.unlinkSync(tmp);
-  const sfx = cut.id === 'master' ? '' : `-${cut.id}`;
+  const sfx = (cut.id === 'master' ? '' : `-${cut.id}`) + (lang === 'en' ? '-en' : '');
   const file = path.join(OUT, `bande-son${sfx}.wav`);
   wav(file, ...fin);
   for (const [name, bus] of [['bruitages', v.fx], ['musique', v.mu], ['ambiance', v.amb]]) {

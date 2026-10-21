@@ -1,9 +1,9 @@
-// Les versions du film (sections 7 et 9) : chacune est un montage de plans du master, sans nouvelle animation.
+// Les versions du film : chacune est un montage du master, sans nouvelle animation.
 //
 // Un segment prend le master à partir de `from` (secondes) et le pose à `at` dans la version ;
 // il dure jusqu'au segment suivant. `rate` < 1 ralentit le temps du master (tenue du carton final).
-// Toutes les coupes tombent sur la grille de 96 BPM, dans le master comme dans la version :
-// le fond sonore garde ainsi sa pulsation d'un segment à l'autre.
+// Toutes les coupes tombent sur la grille de 120 BPM, dans le master comme dans la version :
+// la musique garde ainsi sa pulsation d'un segment à l'autre.
 import { CARDS } from './texts.js';
 import { BEAT, FPS, SYNC, tc } from './timeline.js';
 
@@ -19,62 +19,47 @@ export const CUTS = {
     segments: [{ at: 0, from: 0, name: 'Plan-séquence' }],
   },
 
-  // Section 9 : 48 temps. Ordre, plans, textes et sons du tableau de la section 9 ; les limites
-  // sont posées sur la grille et ajustées pour la lecture (voir README).
+  // 60 temps. Chaque coupe tombe sur un temps, et à la même place dans la mesure (de 2 s) dans le
+  // master et dans la version : la musique garde sa pulsation et ses premiers temps.
+  // On garde le blocage, la demande, l'équipe, le déclic, le bilan et la signature ; l'entretien de
+  // cadrage, la vérification détaillée, le remplacement et le paiement restent dans le master
+  // (le paiement passe en petit sur le carton final).
   '30s': {
     id: '30s', name: 'Version courte 30 s', duration: 30,
     segments: [
-      { at: 0, from: 0, name: 'Accroche' }, // plan 0 raccourci : une seule gomme
-      { at: 3.125, from: 5.0, name: 'Demande' }, // plan 1, recul déjà engagé
-      { at: 7.5, from: 17.5, name: 'Spécialistes' }, // division en trois fils, T3
-      { at: 11.25, from: 23.75, name: 'Spécialistes · vérification' }, // image fixe : la coupe ne se voit pas
-      { at: 13.75, from: 28.75, name: 'Résolution' }, // plan 4, des coups à la porte au franchissement
-      { at: 18.125, from: 38.75, name: 'Suivi' }, // coup de tampon
-      { at: 18.75, from: 40.0, name: 'Suivi · remplacement' }, // le fil s'estompe, le nouveau se raccorde
-      { at: 21.875, from: 50.625, name: 'Clôture' }, // plan 7 dès la pastille 01
+      { at: 0, from: 0, name: 'Le blocage' }, // jusqu'au trou et à la gomme qui tombe
+      { at: 5.0, from: 7.0, name: 'La demande' }, // le demi-tour vers le téléphone, le message
+      { at: 9.0, from: 15.0, name: 'L\'équipe' }, // la fiche envoyée, les trois fiches qui s'envolent
+      { at: 14.0, from: 26.0, name: 'Le déclic' }, // le scotch, « x = 6 », le check
+      { at: 19.5, from: 35.5, name: 'Le bilan' }, // le bilan du mois glisse sur le cahier
+      { at: 22.0, from: 52.0, name: 'La signature' }, // slogan, logo sonore, contact
     ],
     // Textes posés au montage, en temps de la version : [carton, entrée, sortie, réglages].
     cards: [
-      ['T0', 0.6, 3.05],
-      ['T1', 4.375, 7.45],
-      ['T3', 7.5, 11.2],
-      ['T3c', 11.25, 13.7],
-      ['T3d', 11.25, 13.7, { items: [11.25, 11.875, 12.5, 13.125] }],
-      ['T5b', 18.125, 21.8],
-      ['T5d', 18.75, 21.8, { slot: 'lower' }], // sous la feuille, pour rester avec T5b
-      ['T7', 23.75, 27.4],
-      ['T7b', 24.65, 27.4, { underline: 25.65 }],
-      ['T8', 27.5, 31],
-      ['T8n1', 27.5, 31],
-      ['T8n2', 28.125, 31],
-      ['T8i', 27.5, 31],
-      ['T6s', 27.5, 31], // la mention du paiement passe en petit sur le carton final
-      ['T8r', 28.75, 31],
+      ['T0', 1.0, 4.6],
+      ['T1', 5.5, 9.0],
+      ['T3', 10.0, 14.0, { hl: 10.75 }],
+      ['T4', 14.0, 18.5, { hl: 14.9 }],
+      ['T5b', 19.5, 22.0, { hl: 20.3 }],
+      ['T7', 22.0, 24.5],
+      ['T7b', 22.0, 24.5, { hl: 22.4 }],
+      ['T8', 25.0, 31],
+      ['T8n1', 25.5, 31],
+      ['T8n2', 26.0, 31],
+      ['T8i', 25.5, 31],
+      ['T6s', 26.0, 31], // la mention du paiement passe en petit sur le carton final
+      ['T8r', 26.5, 31],
     ],
-    // Sons attachés à un texte déplacé : image du master → instant dans la version.
-    recue: { 1725: 27.5, 1744: 28.125, 1763: 28.75 },
-    bedIn: 3.125, // la pulsation entre avec la demande
-    bell: 28.75, stop: 28.75, // tout s'arrête sur la cloche
-    // Lignes du master qui changent de texte dans la version (null : ligne retirée).
-    edit: {
-      656: null, // T3c reposé à la coupe de 0:11,25
-      881: { anim: 'Porte ouverte (T4 non repris)' },
-      1200: { anim: 'Un fil s\'estompe ; T5d « Remplacement garanti… » en bas de l\'écran' },
-      1256: { anim: 'Nouveau fil raccordé' },
-      1706: null, // T8 avancé à 0:27,5
-    },
     rows: [
-      ['0:03,125', 'Recul déjà engagé ; la ligne glisse sur la table', 'Glissé sur bois, pris en cours', 'Pulsation entre, très basse'],
-      ['0:11,25', 'T3c « Répétiteurs vérifiés »', '—', '—'],
-      ['0:21,875', 'Fond sombre ; la Trajectoire est déjà tracée au dixième', 'Glissando de graphite, pris en cours', 'Fond coupé : le logo sonore joue seul jusqu\'à l\'accord'],
-      ['0:27,5', 'T8 « Demandez un répétiteur », 620 27 39 65, mention du paiement', 'Tapotement feutré', '—'],
-      ['0:28,125', 'Numéro 689 39 47 63', 'Tapotement feutré', '—'],
-      ['0:28,75', 'Logo TutorLab ; « Réponse sous 48 h »', 'Cloche à main', 'Tout s\'arrête sur la cloche'],
-      ['0:30,0', 'Fin', 'Ambiance seule, fondu', '—'],
+      ['0:05,0', 'Coupe : la caméra fait déjà demi-tour vers le téléphone', '—', 'Nappe, trois notes qui montent'],
+      ['0:09,0', 'Coupe : « Votre proposition », les fiches vont s\'envoler', '—', 'Groove'],
+      ['0:14,0', 'Coupe : le répétiteur apporte le scotch', '—', 'Coupure : nappe et ostinato seuls'],
+      ['0:19,5', 'Coupe : le bilan du mois arrive', '—', 'Groove complet'],
+      ['0:22,0', 'Coupe : le logo est formé, le slogan est à l\'écran', '—', 'Final'],
     ],
   },
 
-  // Section 7 : variante de 64 s, carton final 7 s à l'écran (de 0:56,875 à 1:04).
+  // Variante de 64 s : le carton final reste 4,5 s de plus à l'écran (numéros affichés 8,5 s).
   '64s': {
     id: '64s', name: 'Variante 64 s', duration: 64,
     segments: [
@@ -128,7 +113,7 @@ export function cardsFor(cut) {
   return master.map((c) => ({
     ...c, in: map(c.in), out: c.out > 60 ? Infinity : map(c.out),
     ...(c.items ? { items: c.items.map(map) } : {}),
-    ...(c.underline ? { underline: map(c.underline) } : {}),
+    ...(c.hl !== undefined ? { hl: map(c.hl) } : {}),
   }));
 }
 
@@ -143,14 +128,11 @@ export function clock(t) {
 // Feuille de synchronisation de la version : lignes du master qui restent, recalées, plus les lignes propres au montage.
 export function syncFor(cut) {
   if (cut.id === 'master') return SYNC.map((r) => ({ ...r, cut: false }));
-  const recued = new Set(Object.keys(cut.recue || {}).map(Number));
-  const edit = cut.edit || {};
   const rows = [];
   for (const r of SYNC) {
-    if (recued.has(r.frame) || edit[r.frame] === null) continue;
     const t = versionTime(cut, r.t);
     if (t === null || t === Infinity || t >= cut.duration) continue;
-    rows.push({ ...r, ...edit[r.frame], t, frame: Math.round(t * FPS), time: clock(t), cut: false, rank: 2 });
+    rows.push({ ...r, t, frame: Math.round(t * FPS), time: clock(t), cut: false, rank: 2 });
   }
   for (const s of segments(cut).slice(1)) {
     if (s.rate !== 1) continue;
