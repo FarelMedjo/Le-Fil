@@ -36,6 +36,10 @@ const SR = 48000;
 const TAU = Math.PI * 2;
 const MASTER = 60;
 const TAIL = 5; // les stems du master durent 5 s de plus : la cloche et la pièce portent la tenue de la variante 64 s
+// Ralenti : S = 1 pour le master ; S = 1,5 pour la version lente de 90 s. Tous les instants du master sont
+// multipliés par S, les sons qui suivent un geste (frottements, écritures, souffles, nappe, basse) s'allongent
+// d'autant, la musique passe de 120 à 80 BPM ; les chocs, les notes de balafon et les grillons gardent leur durée.
+let S = 1;
 
 // ---------- outils ----------
 
@@ -92,9 +96,10 @@ const filt = (b, ...fs) => { for (const f of fs) for (let i = 0; i < b.length; i
 
 // Bus stéréo : pose un son mono à l'instant t, avec un gain et un panoramique (−1 gauche, +1 droite).
 class Bus {
-  constructor(sec) { this.L = buf(sec); this.R = buf(sec); }
+  // `scale` : les instants passés à put() sont en temps du master, multipliés par scale (ralenti)
+  constructor(sec, scale = S) { this.scale = scale; this.L = buf(sec * scale); this.R = buf(sec * scale); }
   put(t, data, gain = 1, pan = 0) {
-    const o = Math.round(t * SR);
+    const o = Math.round(t * this.scale * SR);
     const gl = gain * Math.cos((pan + 1) * Math.PI / 4) * Math.SQRT2, gr = gain * Math.sin((pan + 1) * Math.PI / 4) * Math.SQRT2;
     for (let i = 0; i < data.length; i++) {
       const j = o + i;
@@ -103,7 +108,7 @@ class Bus {
     }
   }
   putStereo(t, l, r, gain = 1) {
-    const o = Math.round(t * SR);
+    const o = Math.round(t * this.scale * SR);
     for (let i = 0; i < l.length; i++) {
       const j = o + i;
       if (j < 0 || j >= this.L.length) continue;
@@ -147,7 +152,7 @@ function fdnReverb(L, R, { size = 1, decay = 0.6, damp = 5000, pre = 0.012, wet 
 // Crayon, stylo bille, crayon sur scotch, surligneur : grain piloté par la vitesse de la mine.
 // `speed(t)` en mm/s, `down(t)` contact ; `t0`, `dur` fenêtre ; `vref` vitesse de référence.
 function scribe({ t0, dur, speed, down, vref = 250, tool = 'pencil', seed }) {
-  const out = buf(dur + 0.05), r = rng(seed);
+  const out = buf(dur * S + 0.05), r = rng(seed);
   const cfg = {
     pencil: { f1: 3200, q1: 0.9, f2: 4300, q2: 1.4, mix2: 0.3, grainBW: 260, grainDepth: 0.55, body: 0.25, bodyF: 700, level: 0.24 },
     bic: { f1: 2100, q1: 0.7, f2: 4200, q2: 1.0, mix2: 0.3, grainBW: 120, grainDepth: 0.25, body: 0.08, level: 0.17 },
@@ -160,9 +165,9 @@ function scribe({ t0, dur, speed, down, vref = 250, tool = 'pencil', seed }) {
   let prevDown = false, tick = 0;
   let sq = 0, sqPh = 0, burst = 0;
   for (let i = 0; i < out.length; i++) {
-    const t = t0 + i / SR;
+    const t = t0 + i / SR / S;
     const d = down(t);
-    const v = d ? clamp(speed(t) / vref, 0, 1.6) : 0;
+    const v = d ? clamp(speed(t) / S / vref, 0, 1.6) : 0;
     const e = envS(v ** 0.75);
     if (d && !prevDown) tick = 1;
     prevDown = d;
@@ -202,12 +207,12 @@ function writingSound(w, tool, { vref, from = -Infinity, to = Infinity } = {}) {
 
 // Gomme : quatre allers-retours, de plus en plus appuyés, jusqu'à la déchirure.
 function eraserRubs(t0 = 3.0, t1 = 4.0) {
-  const out = buf(t1 - t0 + 0.08), r = rng(41);
+  const out = buf((t1 - t0) * S + 0.08), r = rng(41);
   const b1 = new Biquad('bp', 950, 0.7), b2 = new Biquad('bp', 2300, 1.1), hp = new Biquad('hp', 250), lpE = new Biquad('lp', 5200);
   const sm = onePole(40);
   let ph = 0;
   for (let i = 0; i < out.length; i++) {
-    const t = t0 + i / SR;
+    const t = t0 + i / SR / S;
     const v = Math.abs(Math.cos(((t - 3.0) / 0.25) * TAU)) * (t < t1 ? 1 : Math.max(0, 1 - (t - t1) * 40));
     const press = lerp(0.6, 1.25, clamp((t - t0) / (t1 - t0), 0, 1));
     const e = sm(v ** 0.8 * press);
@@ -266,6 +271,7 @@ function cardSlap(seed) {
 
 // Souffle de papier (une feuille, une fiche qui fend l'air) : bruit filtré qui glisse.
 function swish(dur = 0.4, f0 = 700, f1 = 2200, seed) {
+  dur *= S;
   const out = buf(dur), r = rng(seed);
   const bp = new Biquad('bp', f0, 0.9);
   for (let i = 0; i < out.length; i++) {
@@ -277,11 +283,11 @@ function swish(dur = 0.4, f0 = 700, f1 = 2200, seed) {
 }
 
 function pageFlip(seed) {
-  const out = buf(0.42), r = rng(seed);
+  const out = buf(0.42 * S), r = rng(seed);
   const air = swish(0.32, 500, 1700, seed);
   for (let i = 0; i < air.length; i++) out[i] += air[i] * (0.7 + 0.3 * Math.sin(TAU * 42 * (i / SR)));
   const flap = cardSlap(seed + 1);
-  for (let i = 0; i < flap.length && ms(290) + i < out.length; i++) out[ms(290) + i] += flap[i] * 0.35;
+  for (let i = 0; i < flap.length && ms(290 * S) + i < out.length; i++) out[ms(290 * S) + i] += flap[i] * 0.35;
   // froissement du papier qui plie
   const bp = new Biquad('bp', 3200, 0.8);
   for (let i = 0; i < ms(300); i++) if (r() < 0.02) out[i] += bp.run(r() * 2 - 1) * 0.6;
@@ -290,6 +296,7 @@ function pageFlip(seed) {
 
 // Glissé d'une surface sur une autre (téléphone, feuille, fiche) : frottement doux et régulier.
 function slide(dur, f = 1200, q = 0.7, seed) {
+  dur *= S;
   const out = buf(dur), r = rng(seed);
   const bp = new Biquad('bp', f, q), am = onePole(30);
   for (let i = 0; i < out.length; i++) {
@@ -370,6 +377,7 @@ function creak(dur = 0.55, f0 = 420, f1 = 640, seed, { rough = 1 } = {}) {
 
 // Scotch : déroulé (crépitement collant), déchiré, posé, lissé.
 function tapeUnroll(dur = 0.42, seed) {
+  dur *= S;
   const out = buf(dur), r = rng(seed);
   const bp = new Biquad('bp', 3600, 0.7), hp = new Biquad('hp', 1200), tone = new Biquad('bp', 1450, 8);
   for (let i = 0; i < out.length; i++) {
@@ -382,6 +390,7 @@ function tapeUnroll(dur = 0.42, seed) {
   return peakNorm(out, 0.7);
 }
 function rub(dur, f = 1100, seed) {
+  dur *= S;
   const out = buf(dur), r = rng(seed), bp = new Biquad('bp', f, 0.5);
   for (let i = 0; i < out.length; i++) {
     const t = i / SR;
@@ -430,7 +439,7 @@ function clockTick(tock, seed) {
 
 // Pièce le soir à Yaoundé : souffle de la pièce, grillons au loin.
 function ambience(len, { crickets = (t) => 1 } = {}) {
-  const bus = new Bus(len / SR);
+  const bus = new Bus(len / SR, 1);
   // souffle : bruit rose approché, un générateur par canal (stéréo décorrélée), coupé sous 60 Hz
   for (const [ch, seed] of [[bus.L, 7], [bus.R, 8]]) {
     const r = rng(seed), lp = new Biquad('lp', 900), hp = new Biquad('hp', 60);
@@ -451,7 +460,7 @@ function ambience(len, { crickets = (t) => 1 } = {}) {
     const rr = rng(100 + k);
     let t = rr() * 0.5;
     while (t < len / SR) {
-      const g = ins.gain * crickets(t) * (0.7 + 0.3 * rr());
+      const g = ins.gain * crickets(t / S) * (0.7 + 0.3 * rr());
       if (g > 0.0015) {
         const chirp = buf(ins.pulses * 0.03 + 0.02);
         for (let p = 0; p < ins.pulses; p++) {
@@ -543,6 +552,7 @@ function shaker(energy, seed) {
 
 // Basse : corde grave, avec les harmoniques que les petits haut-parleurs savent rendre.
 function bass(f, dur = 0.45) {
+  dur *= S;
   const out = buf(dur + 0.15), lp = new Biquad('lp', 1400);
   for (let i = 0; i < out.length; i++) {
     const t = i / SR;
@@ -555,6 +565,7 @@ function bass(f, dur = 0.45) {
 
 // Nappe de verres chantés : sinus purs légèrement battants, attaque lente.
 function pad(freqs, dur, { attack = 0.6, release = 0.4, bright = 0.2 } = {}) {
+  dur *= S; attack *= S; release *= S;
   const out = buf(dur + release);
   const ph = freqs.map(() => [0, 0]);
   for (let i = 0; i < out.length; i++) {
@@ -783,7 +794,7 @@ function foley(lang = 'fr') {
   for (const t of [55.5, 56.0]) bus.put(t, click({ f: 1700, decay: 8, body: 220, noise: 0.5, seed: Math.round(t * 10) }), 0.45, 0);
   bus.put(58.0, bell(), 0.3, 0.1);
   // horloge du soir : jusqu'à ce que la musique s'installe
-  for (let k = 0; k <= 8; k++) bus.put(k, clockTick(k % 2 === 1, 1100 + k), 0.12 * (k < 6 ? 1 : 1 - (k - 5) / 4), -0.45);
+  for (let k = 0; k <= 8 * S; k++) { const m = k / S; bus.put(m, clockTick(k % 2 === 1, 1100 + k), 0.12 * (m < 6 ? 1 : Math.max(0, 1 - (m - 5) / 4)), -0.45); }
   return { bus, off };
 }
 
@@ -900,8 +911,9 @@ function limit(L, R, ceil) {
 }
 
 // Stems du master (bruitages, musique, ambiance), en temps du master.
-function masterStems(lang) {
-  const len = Math.round((MASTER + TAIL) * SR);
+function masterStems(lang, scale = 1) {
+  S = scale;
+  const len = Math.round((MASTER + TAIL) * S * SR);
   const { bus: fx, off } = foley(lang);
   // réverbérations : petite pièce pour les bruitages, plus grande et plus sombre pour le hors-champ
   const [rfL, rfR] = fdnReverb(fx.L, fx.R, { size: 0.7, decay: 0.45, damp: 6000, wet: 0.18 });
@@ -933,7 +945,7 @@ function masterStems(lang) {
     return 0.5 - 0.5 * Math.cos((Math.PI * (t - b)) / 0.002);
   };
   for (let i = 0; i < len; i++) {
-    const t = i / SR;
+    const t = i / SR / S; // temps du master
     // silence total à 0:29,5 (jusqu'au déclic) et demi-temps de silence à 0:49,5 : la réverbération est coupée aussi
     const gate = ramp(t, 29.5, DECLIC) * ramp(t, 49.5, 50.0);
     const d = duck(t);
@@ -945,13 +957,14 @@ function masterStems(lang) {
   const amb = ambience(len, { crickets });
   // la pièce passe au premier plan quand rien d'autre ne joue : l'ouverture, la fin et la tenue de la 64 s
   for (let i = 0; i < len; i++) {
-    const t = i / SR;
+    const t = i / SR / S;
     const g = db(8 * (t < 6 ? 1 : t < 7 ? 7 - t : t > 59 ? 1 : t > 58 ? t - 58 : 0));
     amb.L[i] *= g; amb.R[i] *= g;
   }
   // coupe-bas à 90 Hz sur les bruitages : le sous-grave n'est pas rendu par un téléphone mais déclenche le limiteur
   const hpf = [new Biquad('hp', 90), new Biquad('hp', 90)];
   for (let i = 0; i < len; i++) { fx.L[i] = hpf[0].run(fx.L[i]); fx.R[i] = hpf[1].run(fx.R[i]); }
+  S = 1;
   return { fx, mu, amb, len };
 }
 
@@ -1029,6 +1042,15 @@ function build(cut, stems) {
 const only = process.argv[2];
 const lang = process.argv.includes('--en') ? 'en' : 'fr';
 const started = Date.now();
-const stems = masterStems(lang);
-console.log(`Stems du master : ${((Date.now() - started) / 1000).toFixed(1)} s`);
-for (const cut of only && !only.startsWith('--') ? [cutOf(only)] : Object.values(CUTS)) build(cut, stems);
+// les versions ralenties (tempo) ont leurs propres stems, recalculés au ralenti (pas étirés)
+const stemsByTempo = new Map();
+const stemsFor = (cut) => {
+  const k = cut.tempo || 1;
+  if (!stemsByTempo.has(k)) {
+    const t0 = Date.now();
+    stemsByTempo.set(k, masterStems(lang, k));
+    console.log(`Stems${k === 1 ? ' du master' : ` au ralenti ×${k}`} : ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+  }
+  return stemsByTempo.get(k);
+};
+for (const cut of only && !only.startsWith('--') ? [cutOf(only)] : Object.values(CUTS)) build(cut, stemsFor(cut));

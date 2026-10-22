@@ -20,7 +20,7 @@ npm run audio        # bande-son des trois versions dans out/audio/ (environ 30 
 npm run dev          # aperçu sur http://localhost:5173
 ```
 
-L'aperçu lit le film avec le son et affiche, image par image, la ligne correspondante de la feuille de synchronisation. Cliquer une ligne amène à son image. Deux menus choisissent la version (master 60 s, version courte 30 s, variante 64 s) et le format (9:16 ou 16:9).
+L'aperçu lit le film avec le son et affiche, image par image, la ligne correspondante de la feuille de synchronisation. Cliquer une ligne amène à son image. Deux menus choisissent la version (master 60 s, version courte 30 s, variante 64 s, version lente 90 s) et le format (9:16 ou 16:9).
 
 | Touche | Action |
 | --- | --- |
@@ -39,6 +39,7 @@ Les options de l'aperçu affichent la version anglaise, masquent les textes ou m
 | `npm run render:en` | `out/exercice-3-en-1080x1920.mp4` | Version anglaise (après `npm run audio:en`) |
 | `npm run render:30s` | `out/exercice-3-fr-30s-720x1280.mp4` | Version courte 30 s : statuts WhatsApp, publicité |
 | `npm run render:64s` | `out/exercice-3-fr-64s-1080x1920.mp4` | Variante 64 s : le contact reste plus longtemps à l'écran |
+| `npm run render:90s` | `out/exercice-3-fr-90s-1080x1920.mp4` | Version lente 90 s : le film entier au ralenti, pour laisser le temps de lire |
 | `npm run render:16x9` | `out/exercice-3-fr-1920x1080.mp4` | Adaptation 16:9 : Facebook, YouTube, écran en agence |
 | `node scripts/render.mjs --no-text` | `out/exercice-3-fr-sans-texte-1080x1920.mp4` | Export sans texte incrusté |
 | `npm run stills` | `out/stills/…/f0000.png` | Images-clés pour relecture |
@@ -67,6 +68,10 @@ L'entretien de cadrage, la liste des vérifications, le remplacement et l'écran
 ### Variante 64 s
 
 Identique au master jusqu'à 0:59,5 ; le carton final reste ensuite à l'écran jusqu'à 1:04 (numéros affichés 8,5 s et 8 s). La musique s'arrête toujours sur la cloche à 0:58 ; pendant la tenue, le son continue en temps réel : la cloche s'éteint, puis l'ambiance de la pièce porte la fin.
+
+### Version lente 90 s
+
+Le master entier au ralenti ×1,5 : gestes, caméra et écriture vont 1,5 fois moins vite, et chaque texte reste 1,5 fois plus longtemps à l'écran (ses animations d'entrée et de sortie gardent leur vitesse). La bande-son n'est pas étirée : elle est recalculée au ralenti (`tempo: 1.5` dans `src/cuts.js`). La musique passe de 120 à 80 BPM, les frottements, écritures et souffles s'allongent avec les gestes, les chocs, les notes de balafon, les grillons et l'horloge gardent leur durée naturelle. Elle se combine avec les autres options : `--cut 90s --lang en`, `--cut 90s --format 16:9`, `--cut 90s --size 720x1280`.
 
 ### Adaptation 16:9
 

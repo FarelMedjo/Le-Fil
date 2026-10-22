@@ -70,9 +70,18 @@ export const CUTS = {
     ],
     rows: [['1:04,0', 'Fin du carton final tenu', 'La cloche s\'éteint, puis l\'ambiance seule ; fondu', '—']],
   },
+
+  // Version lente de 90 s : tout le master au ralenti ×1,5 (image, gestes, caméra), pour laisser le temps de lire.
+  // Chaque texte reste 1,5 fois plus longtemps à l'écran ; ses animations (bandes, cascade, surligneur) gardent
+  // leur vitesse. La bande-son est recalculée au ralenti (scripts/build-audio.mjs, tempo) : musique à 80 BPM.
+  '90s': {
+    id: '90s', name: 'Version lente 90 s', duration: 90, tempo: 1.5,
+    segments: [{ at: 0, from: 0, rate: 1 / 1.5, name: 'Master au ralenti ×1,5' }],
+    rows: [['0:00,0', 'Version lente : le master au ralenti ×1,5 ; musique à 80 BPM', '—', '—']],
+  },
 };
 
-export const cutOf = (id) => CUTS[id] || CUTS[{ 30: '30s', 64: '64s' }[id]] || CUTS.master;
+export const cutOf = (id) => CUTS[id] || CUTS[{ 30: '30s', 64: '64s', 90: '90s' }[id]] || CUTS.master;
 
 // Segments complétés : fin dans la version (`end`) et fin dans le master (`to`).
 const done = new WeakMap();
