@@ -18,7 +18,7 @@ export const PHONE_REST2 = { x: 205, y: -215, r: 170 };
 export const PHONE_HELD = { x: 165, y: -255, r: 176 };
 // Fiches sur la table, en escalier pour rester lisibles dans le cadre vertical.
 export const CARD_SPOTS = [
-  { x: -52, y: -178, r: -6 },
+  { x: -52, y: -168, r: -6 },
   { x: 52, y: -98, r: 5 },
   { x: -46, y: -40, r: -3 },
 ];
@@ -171,15 +171,15 @@ export function childHand(t, lang) {
     // la main se retire un peu pour laisser la gomme, se fige ; après le trou, elle retombe
     const back = easeInOut(prog(t, 2.75, 3.0));
     const slump = easeInOut(prog(t, 4.1, 4.8));
-    const tip = pageW([endWrong[0] + 8 + back * 16 + slump * 6, endWrong[1] + 6 + back * 10 + slump * 8]);
-    const a = at(tip, 30 - slump * 6);
+    const tip = pageW([endWrong[0] + 2 + back * 22 + slump * 6, endWrong[1] - 0.5 + back * 16.5 + slump * 8]);
+    const a = at(tip, 31 - back - slump * 6);
     // puis elle glisse vers sa place de repos (sous la main du parent)
     return blend(a, at(restTip, 22), easeInOut(prog(t, 5.0, 5.6)));
   }
-  if (t < 27.9) return at(restTip, 22); // posée, crayon en main, toujours dans le cadre
+  if (t < 28.3) return at(restTip, 22); // posée, crayon en main, toujours dans le cadre
   if (t < 28.5) {
     const start = pageW(c.fix.strokes[0].pts[0]);
-    return blend(at(restTip, 22), at(start, 28), easeInOut(prog(t, 27.9, 28.45)));
+    return blend(at(restTip, 22), at(start, 28), easeInOut(prog(t, 28.3, 28.49)));
   }
   if (t < 29.98) {
     const pen = c.fix.pen(t);
@@ -202,16 +202,28 @@ export function childEraser(t, lang) {
   const leave = easeIn(prog(t, 4.2, 4.6));
   const p = pageW([hole.x + rub - (1 - enter) * 120 - leave * 60, hole.y + 1 + (1 - enter) * 160 + leave * 200]);
   // la gomme est tenue en pince ; elle tombe de la main à 0:04,4
-  return { kind: 'child', pose: 'pinch', left: true, ...handAt(p, PINCH, { r: -14, s: CHILD_S, left: true }), h: 18 + (t > 4.0 ? 10 : 0), tool: t < 4.4 ? 'eraser' : '' };
+  return { kind: 'child', pose: 'pinch', left: true, ...handAt(p, PINCH, { r: -14, s: CHILD_S, left: true }), h: 18 + (t > 4.0 ? 10 : 0), tool: t < ERASER_DROP ? 'eraser' : '' };
 }
-// La gomme lâchée, sur la page ; le répétiteur la pousse de côté en arrivant.
+// La gomme lâchée : elle tombe des doigts sur la page, là où la main la lâche (même taille, même sens) ;
+// elle est poussée de côté pendant que la caméra est sur les fiches, hors champ.
+const ERASER_DROP = 4.4;
+const dropMemo = new Map();
 export function droppedEraser(t, lang) {
-  if (t < 4.4) return null;
-  const c = content(lang);
-  const k = easeIn(prog(t, 4.4, 4.62));
-  const push = easeOut(prog(t, 25.3, 25.7));
-  const p = pageW([c.hole.x + 58 + push * 40, c.hole.y + 62 + push * 70]);
-  return { x: p[0], y: p[1] - (1 - k) * 4, r: 24 + push * 30, h: lerp(14, 1.2, k) + bounce(t - 4.62, 6, 9) * 2 };
+  if (t < ERASER_DROP) return null;
+  if (!dropMemo.has(lang)) {
+    // repère de la gomme dans la main au moment où elle est lâchée (src/scene.js, toolFor : pince, rotation 8°)
+    const pose = childEraser(ERASER_DROP - 1e-4, lang);
+    const a8 = (8 * Math.PI) / 180;
+    const q = (u, v) => handPoint([PINCH[0] + u * Math.cos(a8) - v * Math.sin(a8), PINCH[1] - 4 + u * Math.sin(a8) + v * Math.cos(a8)], pose);
+    const o = q(0, 0), ex = q(1, 0), ey = q(0, 1);
+    const ax = [ex[0] - o[0], ex[1] - o[1]], ay = [ey[0] - o[0], ey[1] - o[1]];
+    dropMemo.set(lang, { o, r: (Math.atan2(ax[1], ax[0]) * 180) / Math.PI, s: Math.hypot(ax[0], ax[1]), mirror: ax[0] * ay[1] - ax[1] * ay[0] < 0, h: pose.h });
+  }
+  const d = dropMemo.get(lang);
+  const k = easeIn(prog(t, ERASER_DROP, 4.62));
+  const push = easeInOut(prog(t, 23.0, 23.4));
+  const [dx, dy] = rot([3 * k + push * 40, 6 * k + push * 90], NB.r);
+  return { x: d.o[0] + dx, y: d.o[1] + dy, r: d.r + 14 * k + push * 20, s: d.s, mirror: d.mirror, h: lerp(d.h, 1.2, k) + bounce(t - 4.62, 6, 9) * 2 };
 }
 
 // ---------- le parent ----------
@@ -245,21 +257,26 @@ function cradleOn(ph, h) {
 // Main du parent : se pose sur celle de l'élève (0:06,0), va prendre le téléphone (0:07,0 → 0:07,45),
 // le tient ; le repose (0:18,5) ; revient le prendre pour payer (0:43,6 → 0:48,6).
 export function parentHand(t) {
-  if (t > 5.55 && t < 7.0) {
+  if (t > 5.3 && t < 7.0) {
+    // entre par le haut du cadre (sur le son de la manche, 0:05,3) et se pose à 0:06,0
     const ch = childHand(6.0, 'fr');
     const back = handPoint([0, -60], ch); // dos de la main de l'élève
-    const land = easeOut(prog(t, 5.62, 6.0));
-    const target = handAt([back[0] - 2, back[1] - 4], [0, -70], { r: 200, s: 0.86 });
+    const land = easeOut(prog(t, 5.3, 6.0));
+    const target = handAt([back[0] - 2, back[1] - 4], [0, -70], { r: 200, s: 0.86, left: true });
     const hover = 1 - land;
     const squeeze = Math.exp(-(((t - 6.5) / 0.12) ** 2)) * 0.015; // un temps : la main serre doucement
-    return { kind: 'parent', pose: 'cover', ...target, x: target.x - hover * 30, y: target.y - hover * 260, s: 0.86 * (1 + 0.06 * hover - squeeze), h: 16 + hover * 40, under: false };
+    return { kind: 'parent', pose: 'cover', ...target, x: target.x - hover * 30, y: target.y - hover * 600, s: 0.86 * (1 + 0.06 * hover - squeeze), h: 16 + hover * 40, under: false };
   }
   if (t >= 7.0 && t < 7.45) {
-    // de la main de l'élève jusqu'au téléphone posé
+    // de la main de l'élève jusqu'au téléphone posé : elle passe au-delà du bord du téléphone, puis glisse dessous
     const ch = childHand(6.0, 'fr');
     const back = handPoint([0, -60], ch);
-    const from = { kind: 'parent', pose: 'cover', ...handAt([back[0] - 2, back[1] - 4], [0, -70], { r: 200, s: 0.86 }), h: 16 };
-    return { ...blend(from, cradleOn(phonePose(7.45), 6), easeInOut(prog(t, 7.0, 7.45))), under: t > 7.25 };
+    const from = { kind: 'parent', pose: 'cover', ...handAt([back[0] - 2, back[1] - 4], [0, -70], { r: 200, s: 0.86, left: true }), h: 16 };
+    const to = cradleOn(phonePose(7.45), 6);
+    const [ox, oy] = rot([0, 120], to.r);
+    const via = { ...to, x: to.x + ox, y: to.y + oy, h: 16 };
+    if (t < 7.3) return { ...blend(from, via, easeInOut(prog(t, 7.0, 7.3))), under: false };
+    return { ...blend(via, to, easeInOut(prog(t, 7.3, 7.45))), under: true };
   }
   const ph = phonePose(t);
   if (t >= 7.45 && t < 19.0) {
@@ -286,7 +303,7 @@ export function payThumb(t) {
   const back = easeIn(prog(t, 46.35, 46.75));
   const press = Math.exp(-(((t - 46.25) / 0.06) ** 2));
   // repère du téléphone : le bout du pouce va du bord droit (x = 40) au bouton « Confirmer » (0, 54,5)
-  return { x: lerp(40, 13, go * (1 - back)), y: lerp(64, 55, go * (1 - back)), press };
+  return { x: lerp(38, 13, go * (1 - back)), y: lerp(64, 55, go * (1 - back)), press };
 }
 
 // ---------- les fiches ----------
@@ -319,14 +336,13 @@ export function cardPoses(t) {
     if (i === 2) {
       const dim = prog(t, CARD_SWAP.dim, CARD_SWAP.dim + 0.35);
       const go = easeIn(prog(t, ...CARD_SWAP.out));
-      p = { ...p, x: p.x - go * 330, r: p.r - go * 25, h: p.h + go * 30, dim };
+      p = { ...p, x: p.x - go * 700, r: p.r - go * 25, h: p.h + go * 30, dim };
       if (go >= 1) p.gone = true;
     }
     p.stamp = prog(t, STAMPS[i] - 0.02, STAMPS[i] + 0.16);
     p.i = i;
     // la fiche de maths est choisie (0:22,5) ; pendant le mois, la fiche du spécialiste qui écrit s'allume
-    const writer = MONTH_WRITERS.findIndex((m) => t > m.at[0] - 0.2 && t < m.at[1] + 0.25);
-    const monthSel = writer >= 0 && MONTH_WRITERS[writer].card === i ? 1 : 0;
+    const monthSel = MONTH_WRITERS.reduce((a, m) => (m.card === i ? Math.max(a, prog(t, m.at[0] - 0.35, m.at[0] - 0.2) * (1 - prog(t, m.at[1] + 0.25, m.at[1] + 0.4))) : a), 0);
     p.sel = i === 0 ? ease(prog(t, 22.5, 22.8)) * (1 - prog(t, 24.0, 24.3)) : 0;
     p.sel = Math.max(p.sel, monthSel);
     out.push(p);
@@ -337,7 +353,7 @@ export function cardPoses(t) {
     const e = easeOut(k);
     const b = bounce(t - CARD_SWAP.in[1], 7, 10);
     out.push({
-      i: 3, x: lerp(spot.x - 340, spot.x, e), y: lerp(spot.y + 40, spot.y, e), r: lerp(-40, spot.r + 1, e), s: (1 + Math.sin(Math.PI * k) * 0.12) * (1 + (k >= 1 ? b * 0.025 : 0)),
+      i: 3, x: lerp(spot.x - 700, spot.x, e), y: lerp(spot.y + 40, spot.y, e), r: lerp(-40, spot.r + 1, e), s: (1 + Math.sin(Math.PI * k) * 0.12) * (1 + (k >= 1 ? b * 0.025 : 0)),
       h: k < 1 ? 4 + Math.sin(Math.PI * k) * 60 : 1.5 + Math.max(0, b) * 6, stamp: prog(t, CARD_SWAP.stamp - 0.02, CARD_SWAP.stamp + 0.16), dim: 0, sel: 0,
     });
   }
@@ -366,7 +382,7 @@ export function tutorHand(t, lang) {
   };
 
   if (t < 26.5) return tapeHold(easeOut(prog(t, 25.35, 26.45)), 30);
-  if (t < 26.75) return { ...tapeHold(1, lerp(30, 14, easeOut(prog(t, 26.5, 26.62)))), tool: t < 26.62 ? 'tape' : '' };
+  if (t < 26.75) return { ...tapeHold(1, lerp(30, 14, easeOut(prog(t, 26.5, 26.62)))), tool: t < 26.67 ? 'tape' : '' };
   if (t < 26.95) return blend({ ...tapeHold(1, 14), tool: '' }, smooth(0), easeInOut(prog(t, 26.75, 26.95)));
   if (t < 27.35) return smooth(Math.sin(((t - 26.95) / 0.2) * Math.PI) * 7);
   const pen = c.hint.pen(clamp(t, 27.5, 28.25));
@@ -374,7 +390,7 @@ export function tutorHand(t, lang) {
   if (t < 27.5) return blend(smooth(0), hintStart, easeInOut(prog(t, 27.35, 27.5)));
   if (t < 28.25) return writeAt(pageW(pen.pos), pen.down ? 20 : 28);
   const last = writeAt(pageW(c.hint.strokes.at(-1).pts.at(-1)), 28);
-  if (t < 28.8) return out(last, easeIn(prog(t, 28.25, 28.75))); // se retire : l'élève écrit seule
+  if (t < 28.8) return out(last, easeIn(prog(t, 28.25, 28.5))); // se retire : l'élève écrit seule
   if (t < 29.55) return null;
   // d. revient avec le surligneur, passe sur « x = 6 »
   const y = L.ans - 1.8;
@@ -398,9 +414,9 @@ function fistBump(t, who, from) {
   const front = [0, -112];
   const gap = 7 + squash * 3;
   const fwd = rot([0, -1], r), back = rot([0, 1], r);
-  const tgt = [meet[0] - fwd[0] * gap + back[0] * ret * 170, meet[1] - fwd[1] * gap + back[1] * ret * 170];
+  const tgt = [meet[0] - fwd[0] * gap + back[0] * ret * 420, meet[1] - fwd[1] * gap + back[1] * ret * 420];
   const fist = { kind: who === 'child' ? 'child' : 'maths', pose: 'fist', ...handAt(tgt, front, { r, s }), h: 26 + rise * 50, tool: '' };
-  return blend(from, fist, easeInOut(prog(t, 30.35, 30.9)));
+  return blend(from, fist, easeIn(prog(t, 30.35, BUMP)));
 }
 export const bumpBurst = (t) => (t >= BUMP && t < BUMP + 0.45 ? { at: P(86, 166), k: prog(t, BUMP, BUMP + 0.45) } : null);
 
@@ -414,15 +430,15 @@ export const MONTH_WRITERS = [
 export function monthHand(t, writings) {
   for (let i = 0; i < MONTH_WRITERS.length; i++) {
     const m = MONTH_WRITERS[i];
-    if (t < m.at[0] - 0.25 || t > m.at[1] + 0.3) continue;
+    if (t < m.at[0] - 0.2 || t > m.at[1] + 0.2) continue;
     const w = writings[i];
     const pen = w.pen(clamp(t, m.at[0], m.at[1]));
     let tip = P(pen.pos[0], pen.pos[1]);
-    const inK = easeOut(prog(t, m.at[0] - 0.25, m.at[0]));
-    const outK = easeIn(prog(t, m.at[1], m.at[1] + 0.3));
+    const inK = easeInOut(prog(t, m.at[0] - 0.2, m.at[0]));
+    const outK = easeInOut(prog(t, m.at[1], m.at[1] + 0.2));
     const off = (1 - inK) + outK;
     const dir = rot([0, 1], m.r);
-    tip = [tip[0] + dir[0] * off * 220, tip[1] + dir[1] * off * 220];
+    tip = [tip[0] + dir[0] * off * 900, tip[1] + dir[1] * off * 900];
     return { kind: m.kind, pose: 'write', ...handAt(tip, WRITE_TIP, { r: m.r, s: ADULT_S }), h: pen.down ? 20 : 28, tool: 'bic' };
   }
   return null;
@@ -436,7 +452,7 @@ export function reportPose(t) {
   const b = bounce(t - REPORT_IN[1], 6, 10);
   const go = easeIn(prog(t, ...REPORT_OUT));
   return {
-    x: lerp(REPORT_SPOT.x + 420, REPORT_SPOT.x, e) - go * 380, y: lerp(REPORT_SPOT.y - 60, REPORT_SPOT.y, e) - go * 60, r: lerp(REPORT_SPOT.r + 18, REPORT_SPOT.r, e) - go * 12,
+    x: lerp(REPORT_SPOT.x + 640, REPORT_SPOT.x, e) - go * 1000, y: lerp(REPORT_SPOT.y - 60, REPORT_SPOT.y, e) - go * 60, r: lerp(REPORT_SPOT.r + 18, REPORT_SPOT.r, e) - go * 12,
     s: 1 + Math.sin(Math.PI * k) * 0.05 + (k >= 1 ? b * 0.012 : 0) + Math.sin(Math.PI * go) * 0.04, h: k < 1 ? 3 + Math.sin(Math.PI * k) * 26 : 1.2 + go * 20,
   };
 }

@@ -102,7 +102,7 @@ if (renderMode) {
   // Le 16:9 garde le son du master : même montage, même durée.
   const loadAudio = () => {
     const id = S.options.cut;
-    const src = `out/audio/bande-son${id === 'master' ? '' : '-' + id}.wav`;
+    const src = `out/audio/bande-son${id === 'master' ? '' : '-' + id}${S.options.lang === 'en' ? '-en' : ''}.wav`;
     $('warn').textContent = '';
     audio.removeAttribute('src');
     fetch(src, { method: 'HEAD' }).then((r) => {
@@ -182,7 +182,7 @@ if (renderMode) {
   $('format').value = S.options.format;
   $('cut').onchange = (e) => { if (playing) toggle(); S.setOptions({ cut: e.target.value }); listSync(); loadAudio(); seek(Math.min(frame, FRAMES - 1)); };
   $('format').onchange = (e) => { S.setOptions({ format: e.target.value }); fit(); show(); };
-  $('lang').onchange = (e) => { S.setOptions({ lang: e.target.value }); show(); };
+  $('lang').onchange = (e) => { if (playing) toggle(); S.setOptions({ lang: e.target.value }); loadAudio(); show(); };
   $('text').onchange = (e) => { S.setOptions({ text: e.target.checked }); show(); };
   $('guides').onchange = (e) => { S.setOptions({ guides: e.target.checked }); show(); };
   $('mute').onchange = (e) => { audio.muted = e.target.checked; };

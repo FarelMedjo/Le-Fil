@@ -6,6 +6,7 @@ import { el, g, n, prog, ease, easeOut, easeInOut, clamp, lerp, esc, measure, mi
 import { rect, circle, path, poly, roundRect } from './draw.js';
 import { TXT } from './texts.js';
 import { logoMark, portrait } from './props.js';
+import { CARD_LAND } from './world.js';
 
 export const PH = { w: 76, h: 162, sw: 70, sh: 150 };
 const INK = '#0B0E1A';
@@ -150,9 +151,10 @@ function chat(t, T) {
     const it = items[i];
     const k = easeOut(prog(t, it.at, it.at + 0.35));
     const b = bubble(it.lines, { out: it.kind === 'out', y: 0, time: it.time });
-    y -= b.h;
+    // la nouvelle bulle pousse les précédentes au rythme de son apparition (pas d'un bloc)
+    y -= b.h * k;
     parts.push(g({ transform: `translate(0 ${n(y + (1 - k) * 6)})`, opacity: n(clamp(k * 1.4)) }, b.svg));
-    y -= 2.2;
+    y -= 2.2 * k;
   }
   s += parts.join('');
   // « écrit… » avant la réponse
@@ -245,15 +247,16 @@ function proposal(t, T) {
   const colors = ['#3157A6', '#2F8A68', '#C65A36'];
   for (let i = 0; i < 3; i++) {
     const ki = easeOut(prog(t, PROPOSAL + 0.08 * i, PROPOSAL + 0.08 * i + 0.3));
-    const lifted = t >= 16.0 + i * 0.12;
-    if (ki <= 0 || lifted) continue;
+    // la vignette s'efface au rythme où la fiche qui s'envole apparaît (src/world.js, cardPoses : op)
+    const lift = clamp(prog(t, 16.0 + i * 0.12, CARD_LAND[i]) * 6);
+    if (ki <= 0 || lift >= 1) continue;
     const [cx, cy] = MINI(i);
     let c = path(roundRect(cx - 29, cy - 11, 58, 22, 2.4), { fill: '#FFFFFF' });
     c += path(`M${cx - 29} ${cy - 8.6}a2.4 2.4 0 0 1 2.4 -2.4h3.6v22h-3.6a2.4 2.4 0 0 1 -2.4 -2.4z`, { fill: colors[i] });
     c += g({ transform: `translate(${cx - 14} ${cy})` }, portrait(i, 6.4));
     c += text(T.subjects[i], cx - 5, cy - 0.6, { size: 3, weight: 700, family: F.grotesk });
     c += text(T.spec + ' · ✓', cx - 5, cy + 4.2, { size: 2.1, fill: '#6B7180' });
-    s += g({ opacity: n(ki), transform: `translate(0 ${n((1 - ki) * 8)})` }, c);
+    s += g({ opacity: n(ki * (1 - lift)), transform: `translate(0 ${n((1 - ki) * 8)})` }, c);
   }
   return s;
 }
@@ -294,6 +297,11 @@ export function screen(t, lang, mode) {
   if (mode === 'off') return rect(0, 0, 70, 150, { fill: '#0A0D16' });
   if (t < RING) return chat(t, T);
   if (t < PROPOSAL) return call(t, T);
+  if (t < PROPOSAL + 0.3) {
+    // la fiche remonte et l'écran d'appel s'efface sur la proposition
+    const k = prog(t, PROPOSAL, PROPOSAL + 0.3);
+    return proposal(t, T) + g({ opacity: n(1 - k) }, call(t, T));
+  }
   return proposal(t, T);
 }
 

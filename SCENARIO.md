@@ -75,7 +75,7 @@ Les temps sont ceux de la feuille de synchronisation (`src/timeline.js`). « Cam
 - **Action** : à 0:16,0 les trois fiches se soulèvent de l'écran, grandissent (elles montent vers la caméra, au-dessus du téléphone) et s'envolent. La caméra recule et pivote à nouveau vers le point de vue de l'enfant ; les fiches atterrissent sur la table, une par temps (0:16,5 · 0:17,0 · 0:17,5) : Mathématiques, Physique-Chimie, Anglais, chacune avec le portrait illustré du spécialiste, ce qu'il couvre (« Algèbre · Géométrie »…) et le niveau (« 3e · BEPC »). Le parent repose le téléphone (0:17,7 → 0:18,5) ; la caméra pousse lentement sur les fiches.
 - Puis la vérification : un tampon « VÉRIFIÉ » frappe chaque fiche, et la liste Identité · Parcours · Références · Entretien se coche, un élément par temps (0:20,5 → 0:22,0).
 - À 0:22,5, la fiche de maths s'entoure de lime : c'est ce spécialiste qui vient.
-- **Textes** : T3 « 03 · Proposition sous 7 jours : un spécialiste par matière » (0:16,6 → 0:20,0), surligné sur « un spécialiste par matière » ; T3c « Répétiteurs vérifiés » et sa liste (0:20,0 → 0:23,75).
+- **Textes** : T3 « 03 · Proposition sous 7 jours : un spécialiste par matière » (0:16,3 → 0:20,0), surligné sur « un spécialiste par matière » ; T3c « Répétiteurs vérifiés » et sa liste (0:20,0 → 0:23,75).
 - **Son** : souffle de papier, trois claquements de fiches sur la table, trois tampons, quatre coches. **Musique** : groove complet à 0:16,0 (règle claquée sur les temps 2 et 4), mélodie de balafon.
 
 ### Séquence 6 — 04 · Séance d'essai (0:24 → 0:32)
@@ -88,13 +88,13 @@ Les temps sont ceux de la feuille de synchronisation (`src/timeline.js`). « Cam
 ### Séquence 7 — 05 · Le suivi du mois (0:32 → 0:40)
 
 - **Action** : la caméra s'élève. Un mois passe en accéléré : la lumière tourne du soir au jour et revient, les pages se tournent (0:32,2 · 0:33,2 · 0:34,2), chacune datée (mar. 4, jeu. 13, sam. 22), et à chaque page une autre main de spécialiste écrit un titre souligné : physique-chimie (loi d'Ohm, un circuit), anglais (« I have lived in Yaoundé since 2015. »), maths (Thalès) ; sa fiche s'entoure de lime pendant qu'il écrit. À 0:35,95, la feuille « Bilan du mois » glisse sur le cahier : séances réalisées (une coche par séance), travail couvert, progression dessinée au surligneur, sans aucune note chiffrée. Tampon à 0:38,0.
-- **Texte** : T5b « 05 · Un bilan écrit chaque mois » (0:36,5 → 0:39,75).
+- **Texte** : T5b « 05 · Un bilan écrit chaque mois » (0:36,5 → 0:39,6).
 - **Son** : feuilletages sur les temps, stylos, glissement de la feuille, coches, surligneur, tampon.
 
 ### Séquence 8 — Remplacement garanti (0:40 → 0:45,5)
 
 - **Action** : la fiche d'anglais se ternit (0:40,0) et glisse hors de la table (0:40,3). À 0:42,0 une nouvelle fiche d'anglais arrive à sa place, se pose (0:42,5) et reçoit le tampon « VÉRIFIÉ » (0:43,0).
-- **Textes** : T5c « Indisponibilité ou insatisfaction ? » (0:40,0 → 0:42,0) ; T5d « Remplacement garanti — un autre spécialiste vous est proposé » (0:42,0 → 0:45,5).
+- **Textes** : T5c « Indisponibilité ou insatisfaction ? » (0:39,6 → 0:41,6) ; T5d « Remplacement garanti — un autre spécialiste vous est proposé » (0:41,6 → 0:45,0), « garanti » surligné à 0:42,2.
 - **Musique** : la mélodie de balafon disparaît avec la fiche et revient avec la nouvelle : le remplacement s'entend.
 
 ### Séquence 9 — Paiement (0:44 → 0:48)

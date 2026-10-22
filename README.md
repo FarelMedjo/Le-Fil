@@ -45,11 +45,11 @@ Les options de l'aperçu affichent la version anglaise, masquent les textes ou m
 
 Options : `--cut master|30s|64s`, `--format 9:16|16:9`, `--lang fr|en`, `--size 1080x1920|720x1280|1920x1080`, `--no-text`, `--no-audio`, `--png` (images sans perte, plus lent), `--jobs 4`, `--from` / `--to` (numéros d'image), `--stills 27,195,534`. Elles se combinent : `--cut 30s --format 16:9 --lang en` donne la version courte anglaise en 16:9.
 
-Le master se rend en 13 minutes environ sur 4 cœurs. Vidéo H.264, son AAC stéréo 48 kHz à −14 LUFS intégrés ; la bande-son est limitée à −1,8 dBTP en crête réelle, pour rester sous −1 dBTP après l'encodage AAC ; 6 Mb/s au plus et AAC 192 kb/s pour le master, la variante 64 s et le 16:9 ; 1,5 Mb/s et AAC 128 kb/s pour les exports 720 × 1280.
+Le master se rend en 13 minutes environ sur 4 cœurs. Vidéo H.264, son AAC stéréo 48 kHz à −14 LUFS intégrés ; la bande-son est limitée à −2,3 dBTP en crête réelle, pour rester sous −1 dBTP après l'encodage AAC (y compris à 128 kb/s) ; 6 Mb/s au plus et AAC 192 kb/s pour le master, la variante 64 s et le 16:9 ; 1,5 Mb/s et AAC 128 kb/s pour les exports 720 × 1280.
 
 ## Les versions
 
-Chaque version est un montage du master, décrit dans `src/cuts.js` : une suite de segments (« à tel instant de la version, montrer le master à partir de tel instant »). Les coupes tombent sur un temps de la grille, et à la même place dans la mesure de 2 s, dans le master comme dans la version : la musique garde sa pulsation et ses premiers temps. Le son d'une version est remonté à partir des pistes du master, segment par segment, avec un fondu de 8 ms à chaque coupe.
+Chaque version est un montage du master, décrit dans `src/cuts.js` : une suite de segments (« à tel instant de la version, montrer le master à partir de tel instant »). Les coupes tombent sur un temps de la grille, et à la même place dans la mesure de 2 s, dans le master comme dans la version : la musique garde sa pulsation et ses premiers temps. Le son d'une version est remonté à partir des pistes du master, segment par segment, avec un fondu enchaîné à puissance constante à chaque coupe (24 ms pour la musique et l'ambiance, 3 ms pour les bruitages) ; pas de fondu dans la tenue de la variante 64 s, où le son continue en temps réel. Les sons des textes à l'écran (bandes collées, étiquettes, surligneur) sont posés aux instants de la version.
 
 ### Version courte 30 s
 
@@ -62,7 +62,7 @@ Chaque version est un montage du master, décrit dans `src/cuts.js` : une suite 
 | Le bilan | 0:19,5 → 0:22 | 0:35,5 → 0:38 | T5b (étape 04) |
 | La signature | 0:22 → 0:30 | 0:52 → 1:00 | T7, T8, mention du paiement en petit |
 
-L'entretien de cadrage, la liste des vérifications, le remplacement et l'écran de paiement restent dans le master ; les étapes sont renumérotées (01 à 04). Pendant le déclic, la séance d'essai ne garde que « Séance d'essai à domicile » et sort avant le « 12 » : l'image parle seule, comme dans le master. Le slogan T7b n'a pas la place de tenir son temps de lecture (12 mots avec T7 en 2,5 s) : la version courte garde T7 seul. Tous les textes respectent le temps de lecture de la charte (1 s + 0,3 s par mot) ; T5b est exactement au minimum (2,5 s). Les numéros restent 4,5 s et 4 s à l'écran.
+L'entretien de cadrage, la liste des vérifications, le remplacement et l'écran de paiement restent dans le master ; les étapes sont renumérotées (01 à 04). Pendant le déclic, la séance d'essai ne garde que « Séance d'essai à domicile » et sort avant le « 12 » : l'image parle seule, comme dans le master. Le bilan devient « Un bilan écrit mensuel », la formulation du flyer, en 4 mots. Le slogan T7b n'a pas la place de tenir son temps de lecture (12 mots avec T7 en 2,5 s) : la version courte garde T7 seul. Tous les textes respectent le temps de lecture de la charte (1 s + 0,3 s par mot, étiquette d'étape comprise). Les numéros restent 4,5 s et 4 s à l'écran.
 
 ### Variante 64 s
 

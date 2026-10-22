@@ -719,7 +719,7 @@ function foley(lang = 'fr') {
   bus.put(5.3, slide(0.7, 900, 0.5, 4), 0.32, 0.3); // la manche qui glisse
   bus.put(6.0, thump(160, 90, 0.1, 0.05, 63), 0.22, 0.2);
   bus.put(7.4, slide(0.55, 700, 0.6, 5), 0.42, 0.3);
-  bus.put(7.95, click({ f: 1800, decay: 6, noise: 0.3, seed: 6 }), 0.12, 0.2); // l'écran s'allume
+  bus.put(7.35, click({ f: 1800, decay: 6, noise: 0.3, seed: 6 }), 0.12, 0.2); // l'écran s'allume (src/world.js, phonePose.on)
   // Séquence 3 : clavier, envoi, réception
   // frappe : un clic de touche tous les trois caractères affichés (le message défile en accéléré)
   keyTimes(lang).filter((_, i) => i % 3 === 1).forEach(({ t }, k) => {
@@ -731,7 +731,7 @@ function foley(lang = 'fr') {
   bus.put(ANSWER - 0.02, click({ f: 1600, decay: 8, body: 300, seed: 7 }), 0.2, 0.1);
   FIELDS.forEach((t, i) => bus.put(t, penTick(300 + i), 0.5, 0.1));
   // Séquence 5 : les fiches s'envolent et claquent, la bande surlignée, les tampons, les coches
-  [0, 1, 2].forEach((i) => bus.put(16.0 + i * 0.12, swish(0.45, 600, 2000, 310 + i), 0.55, (i - 1) * 0.5));
+  [0, 1, 2].forEach((i) => bus.put(16.0 + i * 0.12, swish(0.45, 600, 2000, 310 + i), 0.3, (i - 1) * 0.5));
   CARD_LAND.forEach((t, i) => bus.put(t, cardSlap(320 + i), 0.45, (i - 1) * 0.35));
   STAMPS.forEach((t, i) => bus.put(t, stamp(330 + i), 0.4, (i - 1) * 0.3));
   // Séquence 6 : toc-toc, porte, chaise ; le scotch ; le stylo ; le crayon ; le surligneur ; le check
@@ -758,7 +758,7 @@ function foley(lang = 'fr') {
   bus.put(38.0, stamp(541), 0.5, 0);
   // Séquence 8 : la fiche d'anglais s'en va, sa remplaçante arrive
   bus.put(CARD_SWAP.out[0], slide(CARD_SWAP.out[1] - CARD_SWAP.out[0], 1500, 0.6, 600), 0.6, -0.5);
-  bus.put(CARD_SWAP.in[0], swish(0.55, 700, 1800, 601), 0.5, -0.4);
+  bus.put(CARD_SWAP.in[0], swish(0.55, 700, 1800, 601), 0.3, -0.4);
   bus.put(CARD_SWAP.in[1], cardSlap(602), 0.45, -0.2);
   bus.put(CARD_SWAP.stamp, stamp(603), 0.5, -0.2);
   // Séquence 9 : le paiement
@@ -1005,10 +1005,10 @@ function build(cut, stems) {
   let gain = db(-14 - before.I);
   let fin;
   for (let pass = 0; pass < 6; pass++) {
-    fin = limit(L.map((x) => x * gain), R.map((x) => x * gain), db(-2.0));
+    fin = limit(L.map((x) => x * gain), R.map((x) => x * gain), db(-2.5));
     wav(tmp, ...fin);
     const m = measure(tmp);
-    if (Math.abs(m.I + 14) < 0.2 && m.TP <= -1.5) break;
+    if (Math.abs(m.I + 14) < 0.2 && m.TP <= -2.0) break;
     gain *= db(-14 - m.I);
   }
   fs.unlinkSync(tmp);

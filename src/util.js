@@ -135,7 +135,7 @@ export class Fil {
 
 // ---------- SVG ----------
 
-export const n = (v) => (Math.round(v * 10) / 10).toString();
+export const n = (v) => (Math.round(v * 1000) / 1000).toString();
 export const d = (pts) => (pts.length ? 'M' + pts.map((p) => n(p[0]) + ' ' + n(p[1])).join('L') : '');
 export const attrs = (o) => Object.entries(o)
   .filter(([, v]) => v !== undefined && v !== null && v !== false)

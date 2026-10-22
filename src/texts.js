@@ -14,7 +14,7 @@ export const CARDS = [
     fr: ['# Votre demande', '~ WhatsApp ou appel'], en: ['# Your request', '~ WhatsApp or call'] },
   { id: 'T2', in: 12.0, out: 15.75, slot: 'top', step: '02', tilt: -1.5, hl: 12.9,
     fr: ['# Entretien de cadrage', '# sous *`48`\u202Fh*'], en: ['# Scoping interview', '# within *`48`\u202Fh*'] },
-  { id: 'T3', in: 16.6, out: 20.0, slot: 'top', step: '03', tilt: 1.2, hl: 17.25,
+  { id: 'T3', in: 16.3, out: 20.0, slot: 'top', step: '03', tilt: 1.2, hl: 17.25,
     fr: ['# Proposition', '# sous `7`\u202Fjours :', '# *un spécialiste*', '# *par matière*'],
     en: ['# Your match', '# within `7`\u202Fdays:', '# *one specialist*', '# *per subject*'] },
   { id: 'T3c', in: 20.0, out: 23.75, slot: 'top', tilt: -1.5, type: 'checks', items: [20.5, 21.0, 21.5, 22.0],
@@ -23,16 +23,16 @@ export const CARDS = [
   { id: 'T4', in: 24.5, out: 29.25, slot: 'top', step: '04', tilt: -1.2, hl: 25.4,
     fr: ['# Séance d\'essai', '# *à domicile*,', '~ avant tout engagement', '~ de longue durée'],
     en: ['# Trial session', '# *at home*,', '~ before any long-term', '~ commitment'] },
-  { id: 'T5b', in: 36.5, out: 39.75, slot: 'top', step: '05', tilt: 1.4, hl: 37.3,
+  { id: 'T5b', in: 36.5, out: 39.6, slot: 'top', step: '05', tilt: 1.4, hl: 37.3,
     fr: ['# Un *bilan écrit*', '# chaque mois'], en: ['# A *written report*', '# every month'] },
-  { id: 'T5c', in: 40.0, out: 42.0, slot: 'top', tilt: -1.6,
+  { id: 'T5c', in: 39.6, out: 41.6, slot: 'top', tilt: -1.6,
     fr: ['? Indisponibilité', '? ou insatisfaction ?'], en: ['? Unavailable', '? or unsatisfied?'] },
-  { id: 'T5d', in: 42.0, out: 45.5, slot: 'top', tilt: 1.2, hl: 42.6,
+  { id: 'T5d', in: 41.6, out: 45.0, slot: 'top', tilt: 1.2, hl: 42.2,
     fr: ['# Remplacement *garanti*', '~ un autre spécialiste', '~ vous est proposé'],
     en: ['# Replacement', '# *guaranteed*', '~ we propose', '~ another specialist'] },
   { id: 'T6', in: 45.0, out: 49.3, slot: 'top', tilt: -1.2,
-    fr: ['# Paiement mensuel', '# MTN MoMo · Orange Money', '~ prix unique, sans frais cachés'],
-    en: ['# Monthly payment', '# MTN MoMo · Orange Money', '~ one price, no hidden fees'] },
+    fr: ['# Paiement mensuel', '~ MTN MoMo · Orange Money', '~ prix unique, sans frais cachés'],
+    en: ['# Monthly payment', '~ MTN MoMo · Orange Money', '~ one price, no hidden fees'] },
 
   // ---- carton final (bleu profond, sans bandes) ----
   { id: 'T7', in: 50.3, out: 54.5, slot: 'end', stack: 'slogan',
@@ -48,8 +48,8 @@ export const CARDS = [
 
   // ---- version courte : le paiement passe en petit sur le carton final ----
   { id: 'T6s', in: 55.5, out: 61, slot: 'cta', stack: 'contact', cuts: ['30s'],
-    fr: ['. Paiement mensuel par Mobile Money, prix unique'],
-    en: ['. Monthly payment by Mobile Money, one price'] },
+    fr: ['. Paiement mensuel par Mobile\u00A0Money, prix unique'],
+    en: ['. Monthly payment by Mobile\u00A0Money, one price'] },
 ];
 
 // Emplacements, en pixels du cadre 9:16 (marges de 10 % : zones masquées par WhatsApp et Facebook).

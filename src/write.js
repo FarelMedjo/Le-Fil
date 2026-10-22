@@ -96,13 +96,15 @@ export class Writing {
       });
       const [t0, t1] = p.at;
       const T = t1 - t0;
-      // vitesse d'écriture v telle que : ink / v + air / (v · LIFT_SPEED) + (n−1) · LIFT_MIN = T
+      // vitesse d'écriture v telle que : ink / v + air / (v · LIFT_SPEED) + (n−1) · lift = T ;
+      // le temps mort de chaque lever (LIFT_MIN) se resserre si la fenêtre est trop courte, pour ne jamais en déborder
       const n = strokes.length;
-      const fixed = Math.max(0, n - 1) * LIFT_MIN;
-      const v = (ink + air / LIFT_SPEED) / Math.max(0.05, T - fixed);
+      const lift = n > 1 ? Math.min(LIFT_MIN, Math.max(0, T - 0.05) / (n - 1)) : 0;
+      const fixed = Math.max(0, n - 1) * lift;
+      const v = (ink + air / LIFT_SPEED) / Math.max(1e-3, T - fixed);
       let t = t0;
       strokes.forEach((s, i) => {
-        if (i > 0) t += LIFT_MIN + lifts[i] / (v * LIFT_SPEED);
+        if (i > 0) t += lift + lifts[i] / (v * LIFT_SPEED);
         s.t0 = t;
         t += s.len / v;
         s.t1 = t;

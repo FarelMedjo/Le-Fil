@@ -41,8 +41,9 @@ export const CUTS = {
       // l'entretien de cadrage est coupé : les étapes sont renumérotées
       ['T3', 10.1, 14.0, { hl: 10.75, step: '02' }],
       // pendant le déclic, l'image parle seule : la séance d'essai sort avant le « 12 »
-      ['T4', 14.0, 17.25, { hl: 14.9, step: '03', fr: ['# Séance d’essai', '# *à domicile*'], en: ['# Trial session', '# *at home*'] }],
-      ['T5b', 19.5, 22.0, { hl: 20.3, step: '04' }],
+      ['T4', 14.0, 16.5, { hl: 14.9, step: '03', fr: ['# Séance d’essai', '# *à domicile*'], en: ['# Trial session', '# *at home*'] }],
+      // « bilan écrit mensuel » : la formulation du flyer, en 4 mots (2,5 s suffisent, étiquette comprise)
+      ['T5b', 19.5, 22.0, { hl: 20.3, step: '04', fr: ['# Un *bilan écrit*', '# mensuel'], en: ['# A monthly', '# *written report*'] }],
       ['T7', 22.0, 24.5], // le slogan seul : avec T7b, 12 mots en 2,5 s, sous le temps de lecture
       ['T8', 25.0, 31],
       ['T8n1', 25.5, 31],

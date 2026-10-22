@@ -4,7 +4,7 @@
 //   node scripts/render.mjs --lang en            version anglaise
 //   node scripts/render.mjs --size 720x1280      diffusion légère (WhatsApp)
 //   node scripts/render.mjs --cut 30s --size 720x1280   version courte 30 s (section 9)
-//   node scripts/render.mjs --cut 64s            variante 64 s, carton final tenu 7 s
+//   node scripts/render.mjs --cut 64s            variante 64 s, carton final tenu jusqu'à 1:04 (numéros 8,5 s)
 //   node scripts/render.mjs --format 16:9        adaptation 16:9, 1920 × 1080
 //   node scripts/render.mjs --no-text            export sans texte incrusté
 //   node scripts/render.mjs --stills             images-clés en PNG (out/stills)

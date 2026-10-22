@@ -184,7 +184,7 @@ export function tape(cx, cy, k = 1, lift = 0) {
   const w = 40, h = 14;
   const jag = (x, dir) => Array.from({ length: 7 }, (_, i) => [x + (i % 2 ? dir * 1 : 0), -h / 2 + (i * h) / 6]);
   const pts = [...jag(-w / 2, -1), ...jag(w / 2, 1).reverse()];
-  const body = g({ transform: `translate(${n(cx)} ${n(cy)}) rotate(-3) scale(${n(lerp(1.15, 1, k))})`, opacity: n(clamp(k * 1.5)) },
+  const body = g({ transform: `translate(${n(cx)} ${n(cy)}) rotate(-3)`, opacity: n(clamp(k * 1.5)) },
     poly(pts, { fill: '#F1EBDA', 'fill-opacity': 0.8, stroke: '#C9BFA4', 'stroke-width': 0.4 }) +
     path(`M${-w / 2 + 2} ${-h / 2 + 2.4}H${w / 2 - 3}`, { stroke: '#FFFFFF', 'stroke-width': 2, opacity: 0.7 }) +
     path(`M${-w / 2 + 1} ${h / 2 - 0.6}H${w / 2 - 1}`, { stroke: '#B7AD92', 'stroke-width': 0.5, opacity: 0.8 }) +

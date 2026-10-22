@@ -1,14 +1,14 @@
 // Composition d'une image : la table vue par la caméra, la lumière, puis la signature finale.
 // Tout est fonction de t (secondes du master) : aucune animation CSS, aucun état caché.
 import { el, g, n, prog, ease, easeIn, easeOut, easeInOut, clamp, lerp, rot, mixColor, rand } from './util.js';
-import { defs, rect, circle, path, poly, placed, shadow, curve as curve2, LIME, DEEP } from './draw.js';
+import { defs, rect, circle, path, poly, roundRect, placed, shadow, curve as curve2, LIME, DEEP } from './draw.js';
 import { hand, pencil, bic, highlighter, eraserBlock, WRITE_TIP, PINCH } from './hands.js';
 import { notebook, tape, NB, PAGE, content, hlSpot } from './notebook.js';
 import { phone, phoneScreen } from './phone.js';
 import { glass, trousse, textbook, tutorCard, report, logoMark, LOGO } from './props.js';
 import {
   camera, notebookState, childHand, childEraser, droppedEraser, parentHand, payThumb, phonePose, cardPoses, tutorHand,
-  monthHand, reportPose, lighting, bumpBurst, GLASS, TROUSSE, BOOK, V,
+  monthHand, reportPose, lighting, bumpBurst, GLASS, TROUSSE, BOOK, V, ADULT_S,
 } from './world.js';
 import { monthWritings } from './month.js';
 import { TXT } from './texts.js';
@@ -28,7 +28,7 @@ function toolFor(name, pose) {
   if (pose === 'pinch') {
     const [x, y] = PINCH;
     if (name === 'eraser') return g({ transform: `translate(${x} ${y - 4})` }, eraserBlock({ a: 8 }));
-    if (name === 'tape') return g({ transform: `translate(${x} ${y - 2}) rotate(-50)` }, tape(0, 0, 1, 0));
+    if (name === 'tape') return g({ transform: `translate(${x} ${y - 2}) rotate(-62) scale(${n(1 / ADULT_S)}) translate(18.6 1.2)` }, tape(0, 0, 1, 0));
   }
   return '';
 }
@@ -72,7 +72,7 @@ function notebookPlaced(t, lang, st, extra = '') {
 
 function world(t, opt, cam) {
   const lang = opt.lang;
-  sleeveFor = (sc) => clamp((1250 / cam.z) / sc, 160, 560);
+  sleeveFor = (sc) => clamp((1250 / cam.z) / sc, 160, opt.wide ? 900 : 560);
   const T = TXT[lang];
   const L = lighting(t);
   const st = notebookState(t);
@@ -84,7 +84,7 @@ function world(t, opt, cam) {
   // le cahier, ses outils posés
   const dropped = droppedEraser(t, lang);
   s += notebookPlaced(t, lang, st, monthLayer(t, lang, st));
-  if (dropped) s += placed(eraserBlock({ a: 0 }), { x: dropped.x, y: dropped.y, r: dropped.r, h: dropped.h });
+  if (dropped) s += placed(dropped.mirror ? g({ transform: 'scale(1 -1)' }, eraserBlock({ a: 0 })) : eraserBlock({ a: 0 }), { x: dropped.x, y: dropped.y, r: dropped.r, s: dropped.s, h: dropped.h });
   // le bilan du mois
   const rp = reportPose(t);
   if (rp) s += placed(report(t, T, lang), { ...rp });
@@ -113,7 +113,12 @@ function world(t, opt, cam) {
     s += g({ transform: phTf }, phoneScreen(t, lang, { mode: ph.mode, on: ph.on }));
   }
   if (ph.held > 0.02) s += holdingFingers(ph, payThumb(t));
-  for (const c of cards) if (c.h >= 20) s += card(c);
+  for (const c of cards.filter((c) => c.h >= 20 && (c.op ?? 1) > 0.001).sort((a, b) => a.h - b.h)) {
+    s += card(c);
+    const tf = `translate(${n(c.x)} ${n(c.y)}) rotate(${n(c.r)}) scale(${n(c.s)})`;
+    s += `<clipPath id="fly${c.i}"><path d="${roundRect(-43, -60, 86, 120, 3.5)}" transform="${tf}"/></clipPath>`;
+    s += g({ 'clip-path': `url(#fly${c.i})`, opacity: (c.op ?? 1) < 1 ? n(c.op) : undefined }, lightingOverlay(t, L));
+  }
   // 0:49 : la pièce s'éteint ; seul le cahier reste éclairé, et sa lumière chaude s'en va avec la lampe
   if (L.off > 0) {
     s += rect(-3000, -3000, 6000, 6000, { fill: DEEP, opacity: n(L.off) });
@@ -195,7 +200,7 @@ function finaleContent(t, opt) {
   const lang = opt.lang;
   let s = '';
   const cam = camera(49.5);
-  const st = notebookState(49.5);
+  const st = { ...notebookState(49.5), hlLift: prog(t, 49.55, 49.85) };
   // métamorphose : les deux pages deviennent les deux pages du logo
   const k = easeInOut(prog(t, 49.5, 50.35));
   const tg = logoTarget(t);
@@ -221,8 +226,9 @@ function finaleContent(t, opt) {
   const breath = t > 50.45 && t < 54.5 ? 0.5 - 0.5 * Math.cos(((t - 50.45) / 2) * Math.PI * 2) : 0;
   if (breath > 0) s += circle(p[0], p[1], LOGO.ring * tg.s * (1.6 + 0.5 * breath), { fill: 'url(#halo)', opacity: n(0.35 * breath) });
   if (rOut > 0) s += circle(p[0], p[1], rOut, { fill: LOGO.ringColor });
-  if (kd < 1) s += circle(p[0], p[1], rIn * 2.4, { fill: 'url(#halo)', opacity: n(1 - kd) });
-  s += circle(p[0], p[1], rIn, { fill: LIME });
+  const born = easeOut(prog(t, 49.5, 49.62));
+  if (kd < 1) s += circle(p[0], p[1], rIn * 2.4 * born, { fill: 'url(#halo)', opacity: n(1 - kd) });
+  s += circle(p[0], p[1], rIn * born, { fill: LIME });
   // le mot TutorLab se déploie à côté du pictogramme
   const wm = easeOut(prog(t, 54.85, 55.5));
   if (wm > 0) {
@@ -249,7 +255,7 @@ export function renderScene(t, opt, { w = W, h = H } = {}) {
   const camW = wide ? { ...cam, z: cam.z * WIDE.sc } : cam;
   const ax = wide ? WIDE.ax : w / 2;
   let s = '';
-  if (t < 49.5) s += g({ transform: camTransform(camW, w, h, ax) }, world(t, opt, camW));
+  if (t < 49.5) s += g({ transform: camTransform(camW, w, h, ax) }, world(t, { ...opt, wide }, camW));
   s += finale(t, opt, wide ? { w, h, ox: WIDE.ax - (W / 2) * WIDE.sc, sc: WIDE.sc } : { w, h, ox: 0, sc: 1 });
   return s;
 }

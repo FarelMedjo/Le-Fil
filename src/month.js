@@ -154,7 +154,7 @@ export function monthPages(t, lang, st) {
       const front = cur === 1 ? rightPage(99, lang, notebookFinal) : seyesRight() + pageContent(cur - 1, 99, lang);
       s += g({ transform: `scale(${n(c)} 1)` }, front + rect(1, 0, PAGE.w, PAGE.h, { fill: 'url(#leaf)' }));
     } else {
-      s += g({ transform: `scale(${n(c)} 1)` }, seyesRight() + rect(1, 0, PAGE.w, PAGE.h, { fill: 'url(#leaf)', opacity: 0.8 }) +
+      s += g({ transform: `scale(${n(c)} 1)` }, g({ transform: 'scale(-1 1)' }, seyesLeft()) + rect(1, 0, PAGE.w, PAGE.h, { fill: 'url(#leaf)', opacity: 0.8 }) +
         path(`M${PAGE.w - 0.5} 0V${PAGE.h}`, { stroke: '#FFFFFF', 'stroke-width': 0.8, opacity: n(0.5 * Math.sin(a)) }));
     }
     // ombre portée de la feuille soulevée
