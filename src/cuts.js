@@ -29,7 +29,7 @@ export const CUTS = {
     segments: [
       { at: 0, from: 0, name: 'Le blocage' }, // jusqu'au trou et à la gomme qui tombe
       { at: 5.0, from: 7.0, name: 'La demande' }, // le demi-tour vers le téléphone, le message
-      { at: 9.0, from: 15.0, name: 'L\'équipe' }, // la fiche envoyée, les trois fiches qui s'envolent
+      { at: 9.5, from: 15.5, name: 'L\'équipe' }, // « Votre proposition », les trois fiches qui s'envolent
       { at: 14.0, from: 26.0, name: 'Le déclic' }, // le scotch, « x = 6 », le check
       { at: 19.5, from: 35.5, name: 'Le bilan' }, // le bilan du mois glisse sur le cahier
       { at: 22.0, from: 52.0, name: 'La signature' }, // slogan, logo sonore, contact
@@ -37,22 +37,23 @@ export const CUTS = {
     // Textes posés au montage, en temps de la version : [carton, entrée, sortie, réglages].
     cards: [
       ['T0', 1.0, 4.6],
-      ['T1', 5.5, 9.0],
-      ['T3', 10.0, 14.0, { hl: 10.75 }],
-      ['T4', 14.0, 18.5, { hl: 14.9 }],
-      ['T5b', 19.5, 22.0, { hl: 20.3 }],
-      ['T7', 22.0, 24.5],
-      ['T7b', 22.0, 24.5, { hl: 22.4 }],
+      ['T1', 5.5, 9.5],
+      // l'entretien de cadrage est coupé : les étapes sont renumérotées
+      ['T3', 10.1, 14.0, { hl: 10.75, step: '02' }],
+      // pendant le déclic, l'image parle seule : la séance d'essai sort avant le « 12 »
+      ['T4', 14.0, 17.25, { hl: 14.9, step: '03', fr: ['# Séance d’essai', '# *à domicile*'], en: ['# Trial session', '# *at home*'] }],
+      ['T5b', 19.5, 22.0, { hl: 20.3, step: '04' }],
+      ['T7', 22.0, 24.5], // le slogan seul : avec T7b, 12 mots en 2,5 s, sous le temps de lecture
       ['T8', 25.0, 31],
       ['T8n1', 25.5, 31],
       ['T8n2', 26.0, 31],
       ['T8i', 25.5, 31],
-      ['T6s', 26.0, 31], // la mention du paiement passe en petit sur le carton final
+      ['T6s', 25.5, 31], // la mention du paiement passe en petit sur le carton final
       ['T8r', 26.5, 31],
     ],
     rows: [
       ['0:05,0', 'Coupe : la caméra fait déjà demi-tour vers le téléphone', '—', 'Nappe, trois notes qui montent'],
-      ['0:09,0', 'Coupe : « Votre proposition », les fiches vont s\'envoler', '—', 'Groove'],
+      ['0:09,5', 'Coupe : « Votre proposition », les fiches vont s\'envoler', '—', 'Groove'],
       ['0:14,0', 'Coupe : le répétiteur apporte le scotch', '—', 'Coupure : nappe et ostinato seuls'],
       ['0:19,5', 'Coupe : le bilan du mois arrive', '—', 'Groove complet'],
       ['0:22,0', 'Coupe : le logo est formé, le slogan est à l\'écran', '—', 'Final'],

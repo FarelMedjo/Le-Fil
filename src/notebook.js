@@ -15,7 +15,7 @@ const RED = '#C8463E';
 
 // Lignes de base (page droite, repère de la page : x depuis la reliure).
 export const L = { ex2: 24, ex2a: 40, ex2b: 56, ex3: 88, eq: 104, hint: 112, try: 120, ans: 136 };
-const X0 = 33; // juste après la marge
+export const X0 = 33; // juste après la marge
 
 // ---------- contenus écrits (indépendants du temps : construits une fois par langue) ----------
 
@@ -59,8 +59,9 @@ export function content(lang = 'fr') {
     { text: '−5', x: hx + 3, y: L.eq, ...adult, seed: 31, at: [27.66, 28.25] },
   ]);
   // L'élève écrit sur le scotch, puis la réponse (0:28,5 → 0:29,95)
+  const twelveW = layout('12', { ...kid, xh: 4.4, seed: 41 }).width;
   const fix = new Writing([
-    { text: '12', x: lhs.end[0] + 1, y: L.try, ...kid, seed: 41, at: [28.5, 29.2] },
+    { text: '12', x: hole.x + 1 - twelveW / 2, y: L.try, ...kid, xh: 4.4, seed: 41, at: [28.5, 29.2] },
     { text: 'x = 6', x: X0 + 12, y: L.ans, ...kid, xh: 4.2, seed: 42, at: [29.45, 29.95] },
   ]);
   const ans = layout('x = 6', { ...kid, xh: 4.2, seed: 42, x: X0 + 12, y: L.ans });
@@ -128,7 +129,8 @@ export function rightPage(t, lang, st) {
     s += el('ellipse', { cx: n(c.hole.x), cy: n(c.hole.y), rx: 14, ry: 5.2, fill: '#8C909A', opacity: n(0.22 * erase), filter: 'url(#smudge)' });
     for (const [dx, dy, r0, a] of CRUMBS) {
       const k = clamp(erase * 1.6 - (dx + 6) / 40);
-      if (k > 0) s += el('ellipse', { cx: n(c.hole.x + dx - 4), cy: n(c.hole.y + dy + 6), rx: n(r0 * 1.6), ry: n(r0 * 0.7), transform: `rotate(${n(a)} ${n(c.hole.x + dx - 4)} ${n(c.hole.y + dy + 6)})`, fill: '#9EA2AB', opacity: n(0.75 * k) });
+      const kc = k * (st.crumbs ?? 1);
+      if (kc > 0) s += el('ellipse', { cx: n(c.hole.x + dx - 4), cy: n(c.hole.y + dy + 6), rx: n(r0 * 1.6), ry: n(r0 * 0.7), transform: `rotate(${n(a)} ${n(c.hole.x + dx - 4)} ${n(c.hole.y + dy + 6)})`, fill: '#9EA2AB', opacity: n(0.75 * kc) });
     }
   }
   // le trou
@@ -137,12 +139,17 @@ export function rightPage(t, lang, st) {
     const pts = TORN.map(([x, y]) => [c.hole.x + x * k, c.hole.y + y * k]);
     const d = curve(pts, true);
     // la page suivante, dans l'ombre de la feuille percée
-    s += path(d, { fill: '#C9C3B2' });
-    s += g({ 'clip-path': `path('${d}')` }, rect(c.hole.x - 14, c.hole.y - 7, 28, 14, { fill: 'url(#seyesMain)', transform: 'translate(0.7 1.1)', opacity: 0.6 }) +
-      g({ transform: 'translate(0.9 1.2)' }, path(d, { fill: 'none', stroke: '#0B0E1A', 'stroke-opacity': 0.7, 'stroke-width': 4.2, filter: 'url(#soft)' })));
-    // bord déchiré : fibres claires et petits lambeaux soulevés
-    s += path(d, { fill: 'none', stroke: '#FFFFFF', 'stroke-width': 0.9, 'stroke-dasharray': '0.5 0.7', opacity: 0.95 });
-    s += path(d, { fill: 'none', stroke: '#B9B3A2', 'stroke-width': 0.35 });
+    s += path(d, { fill: '#A9A392' });
+    s += g({ 'clip-path': `path('${d}')` }, rect(c.hole.x - 14, c.hole.y - 7, 28, 14, { fill: 'url(#seyesMain)', transform: 'translate(0.7 1.1)', opacity: 0.45 }) +
+      g({ transform: 'translate(1.2 1.6)' }, path(d, { fill: 'none', stroke: '#0B0E1A', 'stroke-opacity': 0.85, 'stroke-width': 5.5, filter: 'url(#soft)' })));
+    // bord déchiré : fibres blanches, et deux lambeaux de papier soulevés qui projettent leur ombre
+    s += path(d, { fill: 'none', stroke: '#FFFFFF', 'stroke-width': 1.3, 'stroke-dasharray': '0.6 0.5', opacity: 0.95 });
+    for (const [i, flip] of [[3, 1], [16, -1]]) {
+      const [px, py] = pts[i], [qx, qy] = pts[(i + 2) % pts.length];
+      const fx = (px + qx) / 2 + flip * 0.5, fy = (py + qy) / 2 + 2.2;
+      s += poly([[px, py], [qx, qy], [fx + 0.8, fy + 0.9]], { fill: '#0B0E1A', opacity: 0.18 });
+      s += poly([[px, py], [qx, qy], [fx, fy]], { fill: '#FFFDF6' });
+    }
   }
   // le scotch
   if (st.tape > 0) s += tape(c.hole.x + 1, c.hole.y + 0.6, st.tape, st.tapeLift);
@@ -150,10 +157,13 @@ export function rightPage(t, lang, st) {
   s += ink(c.hint.visible(t), BLUE, 0.4);
   s += graphite(c.fix.visible(t));
   // surligneur sur « x = 6 »
-  if (st.hl > 0) {
-    const x0 = X0 + 10, x1 = X0 + 14 + c.ans.width;
+  if (st.hl > 0 && (st.hlLift ?? 0) < 1) {
+    let x0 = X0 + 10, x1 = lerp(x0, X0 + 14 + c.ans.width, st.hl);
     const y = L.ans - 1.8;
-    s += path(`M${n(x0)} ${n(y + 0.4)}L${n(lerp(x0, x1, st.hl))} ${n(y - 0.3)}`, { fill: 'none', stroke: '#C8FF3E', 'stroke-width': 6.2, 'stroke-linecap': 'butt', opacity: 0.62, style: 'mix-blend-mode:multiply' });
+    const lift = st.hlLift ?? 0;
+    const mid = (x0 + x1) / 2;
+    x0 = lerp(x0, mid, lift); x1 = lerp(x1, mid, lift);
+    s += path(`M${n(x0)} ${n(y + 0.4)}L${n(x1)} ${n(y - 0.3)}`, { fill: 'none', stroke: '#C8FF3E', 'stroke-width': n(6.2 * (1 - 0.4 * lift)), 'stroke-linecap': lift > 0 ? 'round' : 'butt', opacity: 0.62, style: 'mix-blend-mode:multiply' });
   }
   // ombre de la reliure
   s += rect(1, 0, 22, PAGE.h, { fill: 'url(#spineR)' });
@@ -161,17 +171,24 @@ export function rightPage(t, lang, st) {
 }
 
 // État final de la page d'exercice (après la séance d'essai).
-export const notebookFinal = { erase: 1, hole: 1, tape: 1, tapeLift: 0, hl: 1 };
+export const notebookFinal = { erase: 1, hole: 1, crumbs: 0, tape: 1, tapeLift: 0, hl: 1, hlLift: 0 };
+
+// Centre du surlignage de « x = 6 » (repère du cahier) : la tache qui deviendra le point du logo.
+export function hlSpot(lang = 'fr') {
+  const c = content(lang);
+  return [(X0 + 10 + X0 + 14 + c.ans.width) / 2, L.ans - 1.8];
+}
 
 // Morceau de scotch mat : bords en dents de scie, reflet, léger relief.
 export function tape(cx, cy, k = 1, lift = 0) {
-  const w = 34, h = 13;
-  const jag = (x, dir) => Array.from({ length: 7 }, (_, i) => [x + (i % 2 ? dir * 0.9 : 0), -h / 2 + (i * h) / 6]);
+  const w = 40, h = 14;
+  const jag = (x, dir) => Array.from({ length: 7 }, (_, i) => [x + (i % 2 ? dir * 1 : 0), -h / 2 + (i * h) / 6]);
   const pts = [...jag(-w / 2, -1), ...jag(w / 2, 1).reverse()];
   const body = g({ transform: `translate(${n(cx)} ${n(cy)}) rotate(-3) scale(${n(lerp(1.15, 1, k))})`, opacity: n(clamp(k * 1.5)) },
-    poly(pts, { fill: '#F4F1E6', 'fill-opacity': 0.55, stroke: '#D9D3C0', 'stroke-width': 0.25 }) +
-    path(`M${-w / 2 + 2} ${-h / 2 + 2.2}H${w / 2 - 3}`, { stroke: '#FFFFFF', 'stroke-width': 1.4, opacity: 0.55 }) +
-    path(`M${-w / 2 + 6} ${h / 2 - 2.5}Q0 ${h / 2 - 3.5} ${w / 2 - 5} ${h / 2 - 2}`, { stroke: '#BDB6A0', 'stroke-width': 0.3, fill: 'none', opacity: 0.6 }));
+    poly(pts, { fill: '#F1EBDA', 'fill-opacity': 0.8, stroke: '#C9BFA4', 'stroke-width': 0.4 }) +
+    path(`M${-w / 2 + 2} ${-h / 2 + 2.4}H${w / 2 - 3}`, { stroke: '#FFFFFF', 'stroke-width': 2, opacity: 0.7 }) +
+    path(`M${-w / 2 + 1} ${h / 2 - 0.6}H${w / 2 - 1}`, { stroke: '#B7AD92', 'stroke-width': 0.5, opacity: 0.8 }) +
+    path(`M${-w / 2 + 6} ${h / 2 - 3}Q0 ${h / 2 - 4} ${w / 2 - 5} ${h / 2 - 2.4}`, { stroke: '#BDB6A0', 'stroke-width': 0.3, fill: 'none', opacity: 0.6 }));
   return lift > 0 ? shadow(body, lift * 6, { op: 0.25 }) + body : body;
 }
 

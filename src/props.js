@@ -133,7 +133,9 @@ export function tutorCard(i, T, { stamp = 0, dim = 0, highlight = 0 } = {}) {
   s += text(subj, 0, -42, { size, weight: 700, family: F.grotesk, fill: '#FFFFFF', anchor: 'middle' });
   s += g({ transform: 'translate(0 -6)' }, circle(0, 0, 21.5, { fill: '#FFFEFA' }) + portrait(i, 19.5));
   s += text(T.spec.toUpperCase(), 0, 23, { size: 3.2, weight: 700, family: F.mono, fill: color, anchor: 'middle', spacing: 0.6 });
-  for (const [y, w] of [[30, 54], [35, 44], [40, 50]]) s += rect(-w / 2, y, w, 1.6, { rx: 0.8, fill: '#E3E0D6' });
+  // ce que couvre le spécialiste, et le niveau
+  s += text(T.topics[Math.min(i, 2)], 0, 31.5, { size: 3.6, weight: 600, fill: '#2B3040', anchor: 'middle' });
+  s += text(T.cardLevel, 0, 37.5, { size: 3, weight: 500, fill: '#7A8194', anchor: 'middle' });
   if (highlight > 0) s += path(roundRect(-43, -60, 86, 120, 3.5), { fill: 'none', stroke: '#C8FF3E', 'stroke-width': 2.2, opacity: n(highlight) });
   s += g({ transform: 'translate(10 47)' }, stampMark(T.stamp, { k: stamp }));
   if (dim > 0) s += path(roundRect(-43, -60, 86, 120, 3.5), { fill: '#C7C9CF', opacity: n(0.65 * dim) });

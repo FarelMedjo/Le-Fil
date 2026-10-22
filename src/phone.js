@@ -2,14 +2,14 @@
 // fiche, proposition, paiement). Aucune interface ni aucun logo d'application ou d'opérateur reproduit.
 // Repère local : millimètres, centre du téléphone en (0, 0), haut de l'écran vers −y.
 // L'écran va de (−35, −75) à (35, 75) ; ses contenus sont dessinés en coordonnées d'écran (0..70, 0..150).
-import { el, g, n, prog, ease, easeOut, easeInOut, clamp, lerp, esc, measure } from './util.js';
+import { el, g, n, prog, ease, easeOut, easeInOut, clamp, lerp, esc, measure, mixColor } from './util.js';
 import { rect, circle, path, poly, roundRect } from './draw.js';
 import { TXT } from './texts.js';
 import { logoMark, portrait } from './props.js';
 
 export const PH = { w: 76, h: 162, sw: 70, sh: 150 };
 const INK = '#0B0E1A';
-const CHAT_BG = '#F1EEE6';
+const CHAT_BG = '#F3F3F0';
 const F = { inter: 'Inter', grotesk: 'Space Grotesk', mono: 'JetBrains Mono' };
 
 const text = (str, x, y, { size = 3, weight = 500, fill = INK, anchor = 'start', family = F.inter, op = 1, spacing } = {}) =>
@@ -43,13 +43,13 @@ function statusBar(time, dark = false) {
   return s;
 }
 
-function header(T) {
+function header(T, time = T.now) {
   let s = rect(0, 0, 70, 21, { fill: '#FFFFFF' });
-  s += statusBar(T.now);
+  s += statusBar(time);
   s += path('M5.5 13.5l2.6-2.6M5.5 13.5l2.6 2.6M5.5 13.5h5', { stroke: INK, 'stroke-width': 0.6, 'stroke-linecap': 'round', fill: 'none' });
   s += circle(18, 13.5, 4.4, { fill: '#05070F' }) + g({ transform: 'translate(18 13.9) scale(0.072)' }, logoMark({ center: true }));
   s += text(T.contact, 24.5, 13, { size: 3.3, weight: 600 });
-  s += text(T.online, 24.5, 16.6, { size: 2.2, weight: 500, fill: '#4F8A5B' });
+  s += text(T.online, 24.5, 16.6, { size: 2.2, weight: 500, fill: '#7A8194' });
   s += rect(0, 20.8, 70, 0.25, { fill: '#E2DED3' });
   return s;
 }
@@ -102,7 +102,7 @@ function inputBar(typed, y, caret) {
   const lines = typed ? wrap(typed, 46, 2.75) : [];
   const lh = 2.75 * 1.32;
   const h = Math.max(9, lines.length * lh + 5);
-  let s = path(roundRect(3, y - h, 54, h, 4.5), { fill: '#FFFFFF' });
+  let s = path(roundRect(3, y - h, 54, h, 4.5), { fill: '#EEEFF2' });
   if (!typed) s += text('Message', 7, y - h / 2 + 1, { size: 2.75, fill: '#9AA0AC' });
   lines.forEach((l, i) => { s += text(l, 7, y - h + 2.5 + 2.4 + i * lh, { size: 2.75 }); });
   if (caret && lines.length) {
@@ -112,15 +112,15 @@ function inputBar(typed, y, caret) {
   }
   // bouton d'envoi : avion en papier générique
   s += circle(62.5, y - 4.5, 4.5, { fill: INK });
-  s += path('M60.2 -2.2L65.2 -4.5L60.2 -6.8L60.9 -4.5Z', { fill: '#C8FF3E', transform: `translate(0 ${n(y)})` });
+  s += path('M60.2 -2.2L65.2 -4.5L60.2 -6.8L60.9 -4.5Z', { fill: '#F5F7FC', transform: `translate(0 ${n(y)})` });
   return s;
 }
 
 // ---------- écrans ----------
 
-// Discussion : frappe du message (0:08,25 → 0:09,6), envoi (0:09,75), jour suivant, réponse (0:10,75).
+// Discussion : frappe du message (0:08,25 → 0:09,6), envoi (0:09,75), réponse le soir même (0:10,75).
 export const TYPE = [8.25, 9.6];
-export const SEND = 9.75, DAY = 10.25, REPLY = 10.75;
+export const SEND = 9.75, REPLY = 10.75;
 export function typedAt(t, T) {
   const k = prog(t, TYPE[0], TYPE[1]);
   return T.msg.slice(0, Math.round(k * T.msg.length));
@@ -135,26 +135,20 @@ function chat(t, T) {
   let s = rect(0, 0, 70, 150, { fill: CHAT_BG });
   const typing = t < SEND;
   const kbUp = 1 - ease(prog(t, SEND, SEND + 0.3));
-  const bottom = lerp(150, KEYS_Y - 3, kbUp);
+  // clavier fermé, la discussion s'arrête au-dessus de la marge basse du cadre (le bas de l'écran est hors zone sûre)
+  const bottom = lerp(132, KEYS_Y - 3, kbUp);
   // bulles, empilées depuis le bas de la zone de discussion
   const items = [];
   if (t >= SEND) {
     const lines = wrap(T.msg, 50, 3.2);
-    items.push({ kind: 'out', lines, time: '21:04 ✓✓', at: SEND });
+    items.push({ kind: 'out', lines, time: '21:04', at: SEND });
   }
-  if (t >= DAY) items.push({ kind: 'day', at: DAY });
-  if (t >= REPLY) items.push({ kind: 'in', lines: wrap(T.reply, 50, 3.2), time: '08:12', at: REPLY });
+  if (t >= REPLY) items.push({ kind: 'in', lines: wrap(T.reply, 50, 3.2), time: '21:06', at: REPLY });
   let y = bottom - 13;
   const parts = [];
   for (let i = items.length - 1; i >= 0; i--) {
     const it = items[i];
     const k = easeOut(prog(t, it.at, it.at + 0.35));
-    if (it.kind === 'day') {
-      y -= 7;
-      parts.push(g({ opacity: n(k) }, path(roundRect(24, y, 22, 4.6, 2.3), { fill: '#E2DCCD' }) + text(T.day, 35, y + 3.3, { size: 2.1, anchor: 'middle', weight: 600, fill: '#6B6455' })));
-      y -= 2;
-      continue;
-    }
     const b = bubble(it.lines, { out: it.kind === 'out', y: 0, time: it.time });
     y -= b.h;
     parts.push(g({ transform: `translate(0 ${n(y + (1 - k) * 6)})`, opacity: n(clamp(k * 1.4)) }, b.svg));
@@ -162,19 +156,20 @@ function chat(t, T) {
   }
   s += parts.join('');
   // « écrit… » avant la réponse
-  if (t > DAY + 0.15 && t < REPLY) {
+  if (t > SEND + 0.45 && t < REPLY) {
     const ph = (t * 3) % 1;
     let dots = '';
     for (let i = 0; i < 3; i++) dots += circle(9 + i * 2.4, bottom - 17.5, 0.75, { fill: '#8A8F9C', opacity: n(0.4 + 0.6 * Math.max(0, Math.sin((ph - i / 3) * Math.PI * 2))) });
     s += path(roundRect(3, bottom - 21, 15, 7, 3), { fill: '#FFFFFF' }) + dots;
   }
+  s += rect(0, bottom - 13, 70, 163 - bottom, { fill: '#FFFFFF' });
   s += inputBar(typing ? typedAt(t, T) : '', bottom - 2, typing && t > TYPE[0]);
   if (kbUp > 0.001) {
     const typed = typedAt(t, T);
     const active = typing && t > TYPE[0] && t < TYPE[1] ? (typed.at(-1) || '').toLowerCase() : null;
     s += g({ transform: `translate(0 ${n((1 - kbUp) * 60)})` }, keyboard(T, active && /[a-z ]/.test(active) ? active : null));
   }
-  s += header(T);
+  s += header(T, t < REPLY ? T.now : '21:06');
   return s;
 }
 
@@ -185,19 +180,27 @@ function call(t, T) {
   const inCall = t >= ANSWER;
   s += rect(0, 0, 70, 150, { fill: '#0E1430' });
   s += el('ellipse', { cx: 35, cy: 40, rx: 60, ry: 50, fill: '#1E2A5C', opacity: 0.6 });
-  s += statusBar(T.now.replace('21:04', '08:40'), true);
+  s += statusBar('08:40', true);
   const shrink = ease(prog(t, ANSWER, ANSWER + 0.45));
+  // le lendemain : le jour s'affiche en haut de l'écran d'appel
+  if (shrink < 1) s += text(T.day, 35, 11, { size: 2.4, weight: 600, fill: '#AEB8D6', anchor: 'middle', op: 1 - shrink });
   // avatar
   const ay = lerp(42, 15, shrink), ar = lerp(11, 4.6, shrink);
   if (!inCall || shrink < 1) {
     const pulse = !inCall ? (t - RING) % 0.5 / 0.5 : 0;
-    if (!inCall) s += circle(35, ay, ar + 3 + pulse * 7, { fill: 'none', stroke: '#C8FF3E', 'stroke-width': 0.4, opacity: n(1 - pulse) });
+    if (!inCall) s += circle(35, ay, ar + 3 + pulse * 7, { fill: 'none', stroke: '#F5F7FC', 'stroke-width': 0.4, opacity: n(0.8 * (1 - pulse)) });
   }
   s += circle(lerp(35, 10, shrink), ay, ar, { fill: '#05070F', stroke: '#2B3560', 'stroke-width': 0.4 });
   s += g({ transform: `translate(${n(lerp(35, 10, shrink))} ${n(ay + ar * 0.08)}) scale(${n(ar * 0.0164)})` }, logoMark({ center: true }));
-  s += text(T.contact, lerp(35, 17, shrink), lerp(60, 14, shrink), { size: lerp(4.6, 3, shrink), weight: 600, fill: '#F5F7FC', anchor: shrink > 0.5 ? 'start' : 'middle' });
-  const sub = inCall ? `${T.callTitle} · 00:${String(Math.floor(Math.max(0, t - ANSWER) * 7 + 12)).padStart(2, '0')}` : `${T.incoming} · ${T.callTitle}`;
-  s += text(sub, lerp(35, 17, shrink), lerp(66, 17.8, shrink), { size: lerp(2.6, 2.1, shrink), fill: '#AEB8D6', anchor: shrink > 0.5 ? 'start' : 'middle' });
+  // nom et sous-titre glissent du centre vers la gauche (calés par leur bord gauche : pas de saut)
+  const nameSize = lerp(4.6, 3, shrink), subSize = lerp(2.6, 2.1, shrink);
+  s += text(T.contact, lerp(35 - textW(T.contact, 4.6, 600) / 2, 17, shrink), lerp(60, 14, shrink), { size: nameSize, weight: 600, fill: '#F5F7FC' });
+  // l'entretien passe en accéléré : le chronomètre part de 00:00
+  const sec = Math.floor(Math.max(0, t - ANSWER) * 96);
+  const chrono = `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+  const sub = inCall ? `${T.callTitle} · ${chrono}` : `${T.incoming} · ${T.callTitle}`;
+  const sub0 = `${T.incoming} · ${T.callTitle}`;
+  s += text(sub, lerp(35 - textW(sub0, 2.6) / 2, 17, shrink), lerp(66, 17.8, shrink), { size: subSize, fill: '#AEB8D6' });
   if (!inCall || shrink < 1) {
     const o = 1 - shrink;
     const tap = clamp(1 - Math.abs(t - (ANSWER - 0.05)) * 8);
@@ -221,11 +224,11 @@ function call(t, T) {
         // coche
         const ck = ease(prog(t, FIELDS[i], FIELDS[i] + 0.2));
         f += circle(59, y + 1.5, 2.2, { fill: '#0B0E1A', opacity: n(ck) }) +
-          path('M57.9 101.6l0.8 0.8 1.6-1.7', { transform: `translate(0 ${n(y + 1.5 - 101.4)})`, stroke: '#C8FF3E', 'stroke-width': 0.55, fill: 'none', 'stroke-linecap': 'round', opacity: n(ck) });
+          path('M57.9 101.6l0.8 0.8 1.6-1.7', { transform: `translate(0 ${n(y + 1.5 - 101.4)})`, stroke: '#F5F7FC', 'stroke-width': 0.55, fill: 'none', 'stroke-linecap': 'round', opacity: n(ck) });
       }
     });
     const snt = ease(prog(t, SENT, SENT + 0.25));
-    if (snt > 0) f += g({ opacity: n(snt) }, path(roundRect(9, 109, 52, 8, 4), { fill: '#0B0E1A' }) + text(`${T.sent} ✓`, 35, 114.2, { size: 2.6, weight: 600, fill: '#C8FF3E', anchor: 'middle' }));
+    if (snt > 0) f += g({ opacity: n(snt) }, path(roundRect(9, 109, 52, 8, 4), { fill: '#0B0E1A' }) + text(`${T.sent} ✓`, 35, 114.2, { size: 2.6, weight: 600, fill: '#F5F7FC', anchor: 'middle' }));
     s += g({ transform: `translate(0 ${n((1 - k) * 30 - prop * 120)})`, opacity: n(k) }, f);
   }
   return s;
@@ -236,7 +239,7 @@ function call(t, T) {
 export const MINI = (i) => [35, 53 + i * 26];
 function proposal(t, T) {
   let s = rect(0, 0, 70, 150, { fill: CHAT_BG });
-  s += header(T);
+  s += header(T, '18:15'); // quelques jours plus tard
   const k = ease(prog(t, PROPOSAL, PROPOSAL + 0.35));
   s += g({ opacity: n(k) }, text(T.proposal, 6, 31, { size: 3.6, weight: 700, family: F.grotesk }) + text(T.proposalSub, 6, 35.6, { size: 2.3, fill: '#6B7180' }));
   const colors = ['#3157A6', '#2F8A68', '#C65A36'];
@@ -262,22 +265,24 @@ function payment(t, T) {
   s += statusBar('19:30');
   s += text(T.pay, 6, 18, { size: 4.2, weight: 700, family: F.grotesk });
   s += rect(6, 22, 58, 0.25, { fill: '#E1E4EA' });
-  const row = (lab, val, y) => text(lab, 6, y, { size: 2.3, fill: '#7A8194' }) + text(val, 64, y, { size: 2.8, weight: 600, anchor: 'end' });
-  s += row('→', T.payTo, 32) + row('', T.payWith, 40);
-  s += circle(10, 39.2, 2.4, { fill: '#F2C230' }) + circle(16, 39.2, 2.4, { fill: '#F07B22', opacity: 0.9 });
-  const ok = prog(t, PAY_OK, PAY_OK + 0.4);
-  const tap = clamp(1 - Math.abs(t - PAY_TAP) * 7);
-  if (ok <= 0) {
-    s += path(roundRect(6, 124 - tap * 0.6, 58, 11, 5.5), { fill: '#0B0E1A' }) + text(T.confirm, 35, 131.2, { size: 3, weight: 600, fill: '#F5F7FC', anchor: 'middle' });
-  } else {
-    const k = easeOut(ok);
-    s += circle(35, 76, 15 * (0.6 + 0.4 * k), { fill: '#4ADE80', opacity: n(0.16 * k) });
-    s += circle(35, 76, 15, { fill: 'none', stroke: '#4ADE80', 'stroke-width': 1.3, opacity: n(k) });
-    const ck = ease(prog(t, PAY_OK + 0.05, PAY_OK + 0.35));
-    s += path('M28 76.5l5 5 9-10', { fill: 'none', stroke: '#4ADE80', 'stroke-width': 2.4, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-dasharray': 22, 'stroke-dashoffset': n(22 * (1 - ck)) });
-    s += text(T.paid, 35, 101, { size: 3.2, weight: 600, anchor: 'middle', op: k });
+  // récapitulatif : uniquement les promesses du flyer
+  T.payRows.forEach(([lab, val], i) => {
+    const y = 31 + i * 8.4;
+    s += text(lab, 6, y, { size: 2.4, fill: '#7A8194' }) + text(val, 64, y, { size: 2.8, weight: 600, anchor: 'end' });
+    s += rect(6, y + 3, 58, 0.2, { fill: '#EEF0F3' });
+  });
+  const tap = Math.exp(-(((t - PAY_TAP) / 0.07) ** 2)); // le pouce appuie
+  const k = easeInOut(prog(t, PAY_OK, PAY_OK + 0.32)); // le bouton devient la coche
+  const bw = lerp(58, 26, k) * (1 - 0.04 * tap), bh = lerp(11, 26, k) * (1 - 0.08 * tap), cy = lerp(129.5, 90, k);
+  s += path(roundRect(35 - bw / 2, cy - bh / 2, bw, bh, Math.min(bw, bh) / 2), { fill: mixColor('#0B0E1A', '#4ADE80', k) });
+  if (tap > 0.05 && k <= 0) s += path(roundRect(35 - bw / 2, cy - bh / 2, bw, bh, bh / 2), { fill: '#FFFFFF', opacity: n(0.18 * tap) });
+  if (k < 0.5) s += text(T.confirm, 35, cy + 1.7, { size: 3, weight: 600, fill: '#F5F7FC', anchor: 'middle', op: 1 - k * 2 });
+  if (k > 0) {
+    const ck = ease(prog(t, PAY_OK + 0.25, PAY_OK + 0.5));
+    s += path('M29 90.5l4.4 4.4 8-8.8', { fill: 'none', stroke: '#0B0E1A', 'stroke-width': 2.2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-dasharray': 20, 'stroke-dashoffset': n(20 * (1 - ck)) });
+    s += text(T.paid, 35, 113, { size: 3.2, weight: 600, anchor: 'middle', op: ease(prog(t, PAY_OK + 0.3, PAY_OK + 0.6)) });
     const ring = prog(t, 47.0, 47.7);
-    if (ring > 0 && ring < 1) s += circle(35, 76, 15 + 12 * ease(ring), { fill: 'none', stroke: '#4ADE80', 'stroke-width': 0.8, opacity: n(1 - ring) });
+    if (ring > 0 && ring < 1) s += circle(35, 90, 13 + 12 * ease(ring), { fill: 'none', stroke: '#4ADE80', 'stroke-width': 0.8, opacity: n(1 - ring) });
   }
   return s;
 }

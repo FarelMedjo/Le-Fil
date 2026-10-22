@@ -3,12 +3,12 @@
 import { el, g, n, prog, ease, easeIn, easeOut, easeInOut, clamp, lerp, rot, mixColor, rand } from './util.js';
 import { defs, rect, circle, path, poly, placed, shadow, curve as curve2, LIME, DEEP } from './draw.js';
 import { hand, pencil, bic, highlighter, eraserBlock, WRITE_TIP, PINCH } from './hands.js';
-import { notebook, tape, NB, PAGE, content } from './notebook.js';
+import { notebook, tape, NB, PAGE, content, hlSpot } from './notebook.js';
 import { phone, phoneScreen } from './phone.js';
-import { lamp, glass, trousse, textbook, tutorCard, report, logoMark, LOGO } from './props.js';
+import { glass, trousse, textbook, tutorCard, report, logoMark, LOGO } from './props.js';
 import {
-  camera, notebookState, childHand, childEraser, droppedEraser, parentHand, phonePose, cardPoses, tutorHand,
-  monthHand, reportPose, lighting, bumpBurst, LAMP, GLASS, TROUSSE, BOOK, V,
+  camera, notebookState, childHand, childEraser, droppedEraser, parentHand, payThumb, phonePose, cardPoses, tutorHand,
+  monthHand, reportPose, lighting, bumpBurst, GLASS, TROUSSE, BOOK, V,
 } from './world.js';
 import { monthWritings } from './month.js';
 import { TXT } from './texts.js';
@@ -21,9 +21,9 @@ function toolFor(name, pose) {
   if (!name) return '';
   if (pose === 'write') {
     const [x, y] = WRITE_TIP;
-    if (name === 'pencil') return g({ transform: `translate(${x} ${y})` }, pencil({ a: 62, len: 128 }));
-    if (name === 'bic') return g({ transform: `translate(${x} ${y})` }, bic({ a: 62 }));
-    if (name === 'highlighter') return g({ transform: `translate(${x} ${y})` }, highlighter({ a: 62 }));
+    if (name === 'pencil') return g({ transform: `translate(${x} ${y})` }, pencil({ a: 72, len: 128 }));
+    if (name === 'bic') return g({ transform: `translate(${x} ${y})` }, bic({ a: 72 }));
+    if (name === 'highlighter') return g({ transform: `translate(${x} ${y})` }, highlighter({ a: 72 }));
   }
   if (pose === 'pinch') {
     const [x, y] = PINCH;
@@ -88,11 +88,10 @@ function world(t, opt, cam) {
   // le bilan du mois
   const rp = reportPose(t);
   if (rp) s += placed(report(t, T, lang), { ...rp });
-  // les fiches
-  for (const c of cardPoses(t)) {
-    if (c.gone) continue;
-    s += placed(tutorCard(c.i, T, { stamp: c.stamp, dim: c.dim || 0, highlight: c.sel || 0 }), { x: c.x, y: c.y, r: c.r, s: c.s, h: c.h });
-  }
+  // les fiches posées (celles qui volent passent au-dessus du téléphone, plus bas)
+  const cards = cardPoses(t).filter((c) => !c.gone);
+  const card = (c) => placed(tutorCard(c.i, T, { stamp: c.stamp, dim: c.dim || 0, highlight: c.sel || 0, lang }), { x: c.x, y: c.y, r: c.r, s: c.s, h: c.h, op: c.op ?? 1 });
+  for (const c of cards) if (c.h < 20) s += card(c);
   // les mains de l'élève (sous celle du parent)
   s += drawHand(childEraser(t, lang));
   s += drawHand(childHand(t, lang));
@@ -103,20 +102,29 @@ function world(t, opt, cam) {
   // le téléphone, puis la main du parent
   const ph = phonePose(t);
   const phTf = `translate(${n(ph.x)} ${n(ph.y)}) rotate(${n(ph.r)}) scale(${ph.s})`;
+  const parent = parentHand(t);
+  if (parent && parent.under) s += drawHand(parent); // la main qui tient le téléphone par en dessous
   s += placed(phone(t, lang, { mode: ph.mode, on: 0 }), { x: ph.x, y: ph.y, r: ph.r, s: ph.s, h: ph.h });
-  s += drawHand(parentHand(t));
+  if (parent && !parent.under) s += drawHand(parent);
   s += lightingOverlay(t, L);
   // l'écran éclaire : il passe au-dessus de la lumière de la pièce, avec un halo sur la table
   if (ph.on > 0) {
     s += g({ transform: phTf, opacity: n(ph.on * 0.5 * (1 - L.day)), style: 'mix-blend-mode:screen' }, el('ellipse', { cx: 0, cy: 0, rx: 95, ry: 120, fill: 'url(#screenGlow)' }));
     s += g({ transform: phTf }, phoneScreen(t, lang, { mode: ph.mode, on: ph.on }));
   }
-  if (ph.held > 0.02) s += holdingFingers(ph);
+  if (ph.held > 0.02) s += holdingFingers(ph, payThumb(t));
+  for (const c of cards) if (c.h >= 20) s += card(c);
+  // 0:49 : la pièce s'éteint ; seul le cahier reste éclairé, et sa lumière chaude s'en va avec la lampe
+  if (L.off > 0) {
+    s += rect(-3000, -3000, 6000, 6000, { fill: DEEP, opacity: n(L.off) });
+    s += `<clipPath id="nbClip"><rect x="-172" y="-3.5" width="344" height="227" rx="3" transform="translate(${NB.x} ${NB.y}) rotate(${NB.r}) translate(0 -110)"/></clipPath>`;
+    s += g({ 'clip-path': 'url(#nbClip)' }, notebookPlaced(t, lang, st, monthLayer(t, lang, st)) + lightingOverlay(t, L));
+  }
   return s;
 }
 
 // Doigts du parent qui tiennent le téléphone : trois bouts de doigts sur un bord, le pouce sur l'autre.
-function holdingFingers(ph) {
+function holdingFingers(ph, thumb) {
   const sk = { base: '#6A4330', light: '#8A5E45', nail: '#D2A792', shade: '#4F3123' };
   const tipShape = (x, y, a, w, l) => g({ transform: `translate(${x} ${y}) rotate(${a})` },
     path(`M${-w / 2} ${l}V0a${w / 2} ${w / 2} 0 0 1 ${w} 0V${l}Z`, { fill: sk.base }) +
@@ -129,7 +137,11 @@ function holdingFingers(ph) {
     path(curve2([[1, -w * 0.18], [l * 0.55, -w * 0.28], [l - 1, -w * 0.12]]), { fill: 'none', stroke: sk.light, 'stroke-width': w * 0.28, 'stroke-linecap': 'round', opacity: 0.55 }) +
     path(`M${l * 0.5} ${-w * 0.45}q1.6 ${w * 0.45} 0 ${w * 0.9}`, { fill: 'none', stroke: sk.shade, 'stroke-width': 0.7, opacity: 0.6 }));
   [[-56, -20, 6], [-57, -3, 0], [-56, 14, -6]].forEach(([x, y, a]) => { s += fingerStub(x, y, a, 12.5, 21); });
-  s += fingerStub(58, 30, 180 - 18, 14, 22);
+  // le pouce, sur le bord droit, sous le clavier ; pendant le paiement il vient appuyer sur « Confirmer »
+  if (thumb) {
+    if (thumb.press > 0.05) s += circle(thumb.x, thumb.y, 7 + 9 * thumb.press, { fill: 'none', stroke: '#F5F7FC', 'stroke-width': 0.8, opacity: n(0.6 * thumb.press) });
+    s += fingerStub(56, thumb.y, 180, 14 * (1 + 0.06 * thumb.press), 56 - thumb.x);
+  } else s += fingerStub(58, 64, 180, 14, 20);
   const tf = `translate(${n(ph.x)} ${n(ph.y)}) rotate(${n(ph.r)}) scale(${ph.s})`;
   const inner = g({ transform: tf, opacity: n(clamp(ph.held * 3)) }, s);
   return shadow(inner, 6, { op: 0.3 }) + inner;
@@ -173,10 +185,9 @@ const logoPt = ([x, y], tg) => [tg.c[0] + (x - LOGO.center[0]) * tg.s, tg.c[1] +
 
 // `frame` : cadre de sortie ; le contenu (dessiné en coordonnées du 9:16) y est posé en (ox, 0) à l'échelle sc.
 function finale(t, opt, frame = { w: W, h: H, ox: 0, sc: 1 }) {
-  if (t < 49.0) return '';
-  const off = easeInOut(prog(t, 49.0, 49.55));
-  let bg = rect(0, 0, frame.w, frame.h, { fill: DEEP, opacity: n(off) });
-  if (t >= 49.4) bg += rect(0, 0, frame.w, frame.h, { fill: 'url(#blueprintPx)', opacity: n(prog(t, 49.6, 50.4)) });
+  if (t < 49.5) return ''; // jusque-là, la pièce s'éteint dans le monde (world)
+  let bg = rect(0, 0, frame.w, frame.h, { fill: DEEP });
+  bg += rect(0, 0, frame.w, frame.h, { fill: 'url(#blueprintPx)', opacity: n(prog(t, 49.6, 50.4)) });
   return bg + g({ transform: frame.sc === 1 && !frame.ox ? undefined : `translate(${n(frame.ox)} 0) scale(${frame.sc})` }, finaleContent(t, opt));
 }
 
@@ -185,11 +196,6 @@ function finaleContent(t, opt) {
   let s = '';
   const cam = camera(49.5);
   const st = notebookState(49.5);
-  if (t < 49.5) {
-    // seul le cahier reste éclairé (même caméra que la table, pour qu'il ne bouge pas sous le noir)
-    s += g({ transform: camTransform(camera(t)) }, notebookPlaced(t, lang, st, monthLayer(t, lang, st)));
-    return s;
-  }
   // métamorphose : les deux pages deviennent les deux pages du logo
   const k = easeInOut(prog(t, 49.5, 50.35));
   const tg = logoTarget(t);
@@ -205,7 +211,7 @@ function finaleContent(t, opt) {
   if (ghost > 0) s += g({ transform: camTransform(cam), opacity: n(ghost) }, notebookPlaced(49.5, lang, st, monthLayer(49.5, lang, st)));
   if (k >= 1) s += g({ opacity: 1 }, path(`M${n(logoPt([67.5, 86], tg)[0])} ${n(logoPt([67.5, 86], tg)[1])}V${n(logoPt([67.5, 134], tg)[1])}M${n(logoPt([80, 86], tg)[0])} ${n(logoPt([80, 86], tg)[1])}V${n(logoPt([80, 134], tg)[1])}`, { stroke: '#989AA2', 'stroke-width': n(1.2 * tg.s) }));
   // la tache de surligneur s'envole et devient le point
-  const from = toScreen(nbWorld(HL_SPOT), cam);
+  const from = toScreen(nbWorld(hlSpot(lang)), cam);
   const to = logoPt(LOGO.dot, tg);
   const kd = easeInOut(prog(t, 49.55, 50.4));
   const arc = Math.sin(Math.PI * kd) * 160;
@@ -232,9 +238,6 @@ const nbWorld = ([x, y]) => {
   const lx = x, ly = y - 110;
   return [NB.x + lx * c - ly * si, NB.y + lx * si + ly * c];
 };
-// Où est la dernière tache de surligneur visible à la fin (page de maths, src/month.js).
-import { FINAL_HL } from './month.js';
-const HL_SPOT = FINAL_HL;
 
 // ---------- image complète ----------
 // En 16:9, le cadre 9:16 du master (même hauteur de table) est posé à droite, son centre en x = 1290 :

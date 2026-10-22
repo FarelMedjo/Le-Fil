@@ -87,6 +87,8 @@ export function buildText(container, lang, schedule, positions, wide = false) {
     slots[key].appendChild(el);
     // rotation propre à chaque bande, alternée autour de l'inclinaison du carton
     const strips = [...el.querySelectorAll('.strip')];
+    // la bande du dessus recouvre la suivante, pas l'inverse : les jambages (g, p, q) ne sont pas mangés
+    strips.forEach((s, i) => { s.style.zIndex = String(20 - i); });
     strips.forEach((s, i) => { s.dataset.rot = String((c.tilt || 0) * (i % 2 ? -0.6 : 1) + (i ? (i % 2 ? 0.8 : -0.5) : 0)); s.dataset.dx = String(i % 2 ? 26 : 0); });
     cards.push({
       c, el, strips,
@@ -132,7 +134,10 @@ export function updateText(cards, t) {
     // surligneur
     marks.forEach((m) => {
       const t0 = c.hl ?? c.in + 0.5;
-      m.style.transform = `scaleX(${easeOut(prog(t, t0, t0 + 0.32))})`;
+      const k = easeOut(prog(t, t0, t0 + 0.32));
+      m.style.transform = `scaleX(${k})`;
+      // sur fond sombre, le mot reste blanc jusqu'au passage du surligneur, puis passe à l'encre
+      m.parentElement.classList.toggle('on', k > 0.45);
     });
     checks.forEach((chk, i) => {
       const t0 = c.items[i];

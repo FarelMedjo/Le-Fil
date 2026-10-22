@@ -104,15 +104,14 @@ function accessories(kind) {
 // Tenue du crayon (pince à trois doigts), vue de dessus. La mine est en TIP.
 export const WRITE_TIP = [-52, -150];
 function poseWrite(sk, kind, tool) {
-  let s = '';
+  // l'outil passe sous le dos de la main (calé dans le creux du pouce), puis ressort entre pouce et index
+  let s = tool;
   s += backOfHand([[-24, 4], [-34, -36], [-33, -68], [-22, -90], [0, -98], [16, -95], [31, -86], [40, -60], [34, -24], [24, 4]], sk);
   // annulaire et auriculaire repliés sous la paume : on ne voit que leurs premières phalanges
   s += finger([[29, -84], [27, -97], [22, -103]], W.pinky, sk, { curled: true });
   s += finger([[13, -92], [10, -107], [4, -114]], W.ring, sk, { curled: true });
   // majeur, sous le crayon : son bout dépasse à droite de l'index
   s += finger([[-4, -94], [-15, -114], [-26, -128], [-31, -135]], W.middle * 0.95, sk);
-  // l'outil, dans le creux entre pouce et index
-  s += tool;
   // pouce, contre le crayon, côté gauche
   s += finger([[-30, -36], [-44, -62], [-51, -90], [-48, -111]], W.thumb, sk);
   // index couché sur le crayon
