@@ -84,7 +84,13 @@ async function openPage() {
 // Images JPEG qualité 95 pour la vidéo (5 à 6 fois plus rapides à capturer que le PNG), PNG pour les images-clés.
 const PNG = argv.includes('--png');
 async function shot(page, frame, type = 'png') {
-  await page.evaluate((f) => window.LeFil.renderFrame(f), frame);
+  // l'image du logo (<image> SVG) est recréée à chaque image : on attend qu'elle soit décodée et peinte,
+  // sinon une capture peut partir sans elle (le mot TutorLab disparaissait parfois une image)
+  await page.evaluate(async (f) => {
+    window.LeFil.renderFrame(f);
+    await Promise.all([...document.querySelectorAll('image')].map((im) => (im.decode ? im.decode().catch(() => {}) : null)));
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  }, frame);
   return page.screenshot({ type, clip: { x: 0, y: 0, width, height }, ...(type === 'jpeg' ? { quality: 95 } : {}) });
 }
 
