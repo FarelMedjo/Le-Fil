@@ -67,7 +67,7 @@ export const CUTS = {
       { at: 0, from: 0, name: 'Master' },
       { at: 59.5, from: 59.5, rate: 0.5 / 4.5, name: 'Carton final tenu' },
     ],
-    rows: [['1:04,0', 'Fin du carton final tenu', 'Ambiance seule, fondu', '—']],
+    rows: [['1:04,0', 'Fin du carton final tenu', 'La cloche s\'éteint, puis l\'ambiance seule ; fondu', '—']],
   },
 };
 

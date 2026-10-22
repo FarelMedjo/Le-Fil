@@ -5,7 +5,7 @@ Spot de 60 secondes destiné aux parents : 9:16, 1080 × 1920, 30 i/s, sans voix
 Ce dépôt remplace l'animatique « Le Fil » par un film entièrement refait. Le nouveau concept :
 
 - **Un plan-séquence en plongée au-dessus de la table familiale.** La caméra glisse, tourne et plonge d'un rectangle à l'autre : la page du cahier de l'élève, l'écran du téléphone du parent, les fiches des répétiteurs. L'écran du spectateur devient tour à tour la page et le téléphone ; quand on passe du monde de l'enfant à celui du parent, le cadre fait un demi-tour.
-- **Un récit avec une image forte.** L'élève gomme tant qu'elle perce sa page. Le répétiteur pose un morceau de scotch sur le trou, et c'est sur le scotch qu'elle écrit la bonne réponse.
+- **Un récit avec une image forte.** L'élève gomme tant qu'elle perce sa page. Le répétiteur pose un morceau de scotch sur le trou, et c'est sur le scotch qu'elle écrit le bon résultat, « 12 », avant « x = 6 ».
 - **Le lime de la charte devient un surligneur**, qui marque chaque engagement. À la fin, le cahier se redresse et devient le pictogramme du logo ; la tache de surligneur de « x = 6 » devient le point lime.
 - **Une écriture manuscrite vivante** (polices à trait unique), dont le son est calculé à partir de la vitesse réelle de la mine.
 - **Une musique d'inspiration bikutsi**, la musique de Yaoundé, jouée au balafon et avec les objets de la table.
@@ -45,7 +45,7 @@ Les options de l'aperçu affichent la version anglaise, masquent les textes ou m
 
 Options : `--cut master|30s|64s`, `--format 9:16|16:9`, `--lang fr|en`, `--size 1080x1920|720x1280|1920x1080`, `--no-text`, `--no-audio`, `--png` (images sans perte, plus lent), `--jobs 4`, `--from` / `--to` (numéros d'image), `--stills 27,195,534`. Elles se combinent : `--cut 30s --format 16:9 --lang en` donne la version courte anglaise en 16:9.
 
-Le master se rend en 13 minutes environ sur 4 cœurs. Vidéo H.264, son AAC stéréo 48 kHz à −14 LUFS intégrés, crête réelle −1 dBTP ; 6 Mb/s au plus et AAC 192 kb/s pour le master, la variante 64 s et le 16:9 ; 1,5 Mb/s et AAC 128 kb/s pour les exports 720 × 1280.
+Le master se rend en 13 minutes environ sur 4 cœurs. Vidéo H.264, son AAC stéréo 48 kHz à −14 LUFS intégrés ; la bande-son est limitée à −1,8 dBTP en crête réelle, pour rester sous −1 dBTP après l'encodage AAC ; 6 Mb/s au plus et AAC 192 kb/s pour le master, la variante 64 s et le 16:9 ; 1,5 Mb/s et AAC 128 kb/s pour les exports 720 × 1280.
 
 ## Les versions
 
@@ -56,21 +56,21 @@ Chaque version est un montage du master, décrit dans `src/cuts.js` : une suite 
 | Segment | Version | Master | Textes |
 | --- | --- | --- | --- |
 | Le blocage | 0:00 → 0:05 | 0:00 → 0:05 | T0 |
-| La demande | 0:05 → 0:09 | 0:07 → 0:11 | T1 |
-| L'équipe | 0:09 → 0:14 | 0:15 → 0:20 | T3 |
-| Le déclic | 0:14 → 0:19,5 | 0:26 → 0:31,5 | T4 |
-| Le bilan | 0:19,5 → 0:22 | 0:35,5 → 0:38 | T5b |
-| La signature | 0:22 → 0:30 | 0:52 → 1:00 | T7, T7b, T8, mention du paiement en petit |
+| La demande | 0:05 → 0:09,5 | 0:07 → 0:11,5 | T1 |
+| L'équipe | 0:09,5 → 0:14 | 0:15,5 → 0:20 | T3 (étape 02) |
+| Le déclic | 0:14 → 0:19,5 | 0:26 → 0:31,5 | T4 raccourci (étape 03) |
+| Le bilan | 0:19,5 → 0:22 | 0:35,5 → 0:38 | T5b (étape 04) |
+| La signature | 0:22 → 0:30 | 0:52 → 1:00 | T7, T8, mention du paiement en petit |
 
-L'entretien de cadrage, la liste des vérifications, le remplacement et l'écran de paiement restent dans le master. Deux textes sont sous le temps de lecture de la charte (1 s + 0,3 s par mot) : T5b (2,5 s) et le slogan T7b (2,5 s pour 3,4 s). Les numéros restent 4,5 s à l'écran.
+L'entretien de cadrage, la liste des vérifications, le remplacement et l'écran de paiement restent dans le master ; les étapes sont renumérotées (01 à 04). Pendant le déclic, la séance d'essai ne garde que « Séance d'essai à domicile » et sort avant le « 12 » : l'image parle seule, comme dans le master. Le slogan T7b n'a pas la place de tenir son temps de lecture (12 mots avec T7 en 2,5 s) : la version courte garde T7 seul. Tous les textes respectent le temps de lecture de la charte (1 s + 0,3 s par mot) ; T5b est exactement au minimum (2,5 s). Les numéros restent 4,5 s et 4 s à l'écran.
 
 ### Variante 64 s
 
-Identique au master jusqu'à 0:59,5 ; le carton final reste ensuite à l'écran jusqu'à 1:04 (numéros affichés 8,5 s). La musique s'arrête toujours sur la cloche à 0:58 ; l'ambiance de la pièce porte la tenue.
+Identique au master jusqu'à 0:59,5 ; le carton final reste ensuite à l'écran jusqu'à 1:04 (numéros affichés 8,5 s et 8 s). La musique s'arrête toujours sur la cloche à 0:58 ; pendant la tenue, le son continue en temps réel : la cloche s'éteint, puis l'ambiance de la pièce porte la fin.
 
 ### Adaptation 16:9
 
-1920 × 1080, même montage et même son que le master. La table est vue à la même hauteur que dans le 9:16, et plus large : l'action est posée à droite (le centre du cadre 9:16 tombe en x = 1290) et les textes passent dans une colonne à gauche, à 10 % des bords. Le carton final garde le logo à droite et le texte à gauche.
+1920 × 1080, même montage et même son que le master. La table est vue à la même hauteur que dans le 9:16, et plus large : l'action est posée à droite (le centre du cadre 9:16 tombe en x = 1290) et les textes passent dans une colonne à gauche, à 10 % des bords, aux tailles minimales de la charte (64 px pour les titres, 44 px pour les sous-titres). Le carton final garde le logo à droite et le texte à gauche. Limite connue : le téléphone tient dans la hauteur du cadre, si bien que les textes de ses écrans y sont plus petits qu'en 9:16 ; ils restent lisibles en plein écran, pas en vignette.
 
 ### Version anglaise
 
@@ -109,10 +109,11 @@ Tout le rendu est déterministe : chaque image est une fonction du seul instant 
 
 ## Ce qui reste à valider
 
+- **T5c « Indisponibilité ou insatisfaction ? »** : texte repris du document de production ; vérifier que le flyer couvre bien l'insatisfaction.
 - **La bande-son est entièrement synthétisée.** Elle sonne juste en rythme et en intention, mais rien ne remplacera une séance d'enregistrement : un balafoniste pour la musique, les objets de la table pour les bruitages. Les pistes séparées (bruitages, musique, ambiance) sont dans `out/audio/pistes/`, en WAV 32 bits flottants stéréo.
 - **Les matières montrées** (Maths, Physique-Chimie, Anglais), le niveau (3e, BEPC) et le texte du message du parent.
 - **La version anglaise**, à faire relire.
-- **Les écarts de la version courte** au temps de lecture (T5b, T7b).
+- **La version courte sans T7b** (le slogan « Une équipe pour la réussite de votre enfant » n'y tient pas son temps de lecture).
 
 ## Licences
 
