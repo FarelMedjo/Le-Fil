@@ -45,7 +45,7 @@ Les options de l'aperçu affichent la version anglaise, masquent les textes ou m
 
 Options : `--cut master|30s|64s`, `--format 9:16|16:9`, `--lang fr|en`, `--size 1080x1920|720x1280|1920x1080`, `--no-text`, `--no-audio`, `--png` (images sans perte, plus lent), `--jobs 4`, `--from` / `--to` (numéros d'image), `--stills 27,195,534`. Elles se combinent : `--cut 30s --format 16:9 --lang en` donne la version courte anglaise en 16:9.
 
-Le master se rend en 13 minutes environ sur 4 cœurs. Vidéo H.264, son AAC stéréo 48 kHz à −14 LUFS intégrés ; la bande-son est limitée à −2,3 dBTP en crête réelle ; l'encodeur AAC peut encore la faire dépasser, alors l'export mesure la crête réelle du MP4 et, au-delà de −1 dBTP, réencode le son quelques dixièmes de dB plus bas (export léger du master : −14,5 LUFS, −1,5 dBTP) ; 6 Mb/s au plus et AAC 192 kb/s pour le master, la variante 64 s et le 16:9 ; 1,5 Mb/s et AAC 128 kb/s pour les exports 720 × 1280.
+Le master se rend en 13 minutes environ sur 4 cœurs. Vidéo H.264, son AAC stéréo 48 kHz à −14 LUFS intégrés ; la bande-son est limitée à −2,3 dBTP en crête réelle ; l'encodeur AAC peut encore la faire dépasser, alors l'export mesure la crête réelle du MP4 et, au-delà de −1 dBTP, réencode le son quelques dixièmes de dB plus bas ; 6 Mb/s au plus et AAC 192 kb/s pour le master, la variante 64 s et le 16:9 ; 1,5 Mb/s et AAC 128 kb/s pour les exports 720 × 1280.
 
 ## Les versions
 

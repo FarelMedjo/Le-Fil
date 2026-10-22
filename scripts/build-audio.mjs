@@ -26,7 +26,7 @@ import { CUTS, cutOf, segments, cardsFor } from '../src/cuts.js';
 import { content } from '../src/notebook.js';
 import { monthWritings } from '../src/month.js';
 import { CARDS } from '../src/texts.js';
-import { keyTimes, SEND, REPLY, RING, ANSWER, FIELDS, PAY_TAP, PAY_OK } from '../src/phone.js';
+import { keyTimes, SEND, REPLY, RING, ANSWER, FIELDS, SENT, PROPOSAL, PAY_TAP, PAY_OK } from '../src/phone.js';
 import { CARD_LAND, STAMPS, FLIPS, BACK_FLIPS, CARD_SWAP, REPORT_IN, REPORT_OUT, BUMP, MONTH_WRITERS } from '../src/world.js';
 import { REPORT_TICKS } from '../src/props.js';
 
@@ -224,7 +224,7 @@ function eraserRubs(t0 = 3.0, t1 = 4.0) {
 }
 
 // Papier qui se déchire : une salve de micro-craquements, puis le claquement final.
-function tear(dur = 0.2, { bright = 1 } = {}) {
+function tear(dur = 0.2, { bright = 1, snapAt = 0.78 } = {}) {
   const out = buf(dur), r = rng(51);
   const bp = new Biquad('bp', 2800 * bright, 0.6), hp = new Biquad('hp', 700);
   for (let i = 0; i < out.length; i++) {
@@ -235,7 +235,7 @@ function tear(dur = 0.2, { bright = 1 } = {}) {
     out[i] = hp.run(bp.run(y + (r() * 2 - 1) * 0.15 * (1 - u)));
   }
   // claquement final
-  const k0 = Math.floor(out.length * 0.78);
+  const k0 = Math.floor(out.length * snapAt);
   for (let i = 0; i < ms(6) && k0 + i < out.length; i++) out[k0 + i] += (r() * 2 - 1) * (1 - i / ms(6));
   return peakNorm(out, 0.9);
 }
@@ -678,6 +678,7 @@ function music(sec) {
   }
   // 0:10,75 : réception, une seule note
   bus.put(REPLY, filt(Float32Array.from(balafon(NOTE('A5'), 8)), new Biquad('hp', 600)), 0.22, 0.25);
+  bus.put(PROPOSAL, filt(Float32Array.from(balafon(NOTE('D6'), 8)), new Biquad('hp', 600)), 0.2, 0.25); // la proposition arrive
   // 0:24 → 0:29,5 : suspension ; la nappe monte puis tout se tait net à 0:29,5
   bus.put(28.0, pad(['A3', 'E4', 'B4', 'C#5'].map(NOTE), 1.5, { attack: 1.2, release: 0.01, bright: 0.35 }), 0.16, 0);
   // 0:30,0 : le déclic — accord plein
@@ -711,7 +712,7 @@ function foley(lang = 'fr') {
   bus.put(2.72, slide(0.3, 1500, 0.6, 3), 0.35, -0.3); // la manche de la main gauche
   bus.put(0.3, slide(0.35, 1100, 0.6, 2), 0.3, 0.2); // la manche de l'élève sur la page
   bus.put(3.0, eraserRubs(3.0, 4.0), 0.35, -0.1);
-  bus.put(4.0, tear(0.22), 0.3, 0);
+  bus.put(4.0, tear(0.22, { snapAt: 0.02 }), 0.3, 0);
   bus.put(4.0, thump(200, 110, 0.07, 0.1, 64), 0.25, 0);
   bus.put(4.62, thump(240, 140, 0.06, 0.6, 61), 0.25, 0.2); // la gomme tombe
   bus.put(4.71, thump(260, 160, 0.04, 0.4, 62), 0.1, 0.2);
@@ -726,7 +727,9 @@ function foley(lang = 'fr') {
     const r = rng(200 + k);
     bus.put(t, click({ f: 1500 + 700 * r(), decay: 1.2, body: 0, noise: 1, tone: 0.15, len: 0.03, seed: 200 + k }), 0.22 * db((r() - 0.5) * 6), 0.1);
   });
-  bus.put(SEND, (() => { const o = buf(0.07); let ph = 0; for (let i = 0; i < o.length; i++) { const t = i / SR; ph += (TAU * lerp(700, 1500, Math.min(1, t / 0.035))) / SR; o[i] = Math.sin(ph) * Math.exp(-t / 0.018); } return o; })(), 0.22, 0.15);
+  const sendBlip = () => { const o = buf(0.07); let ph = 0; for (let i = 0; i < o.length; i++) { const t = i / SR; ph += (TAU * lerp(700, 1500, Math.min(1, t / 0.035))) / SR; o[i] = Math.sin(ph) * Math.exp(-t / 0.018); } return o; };
+  bus.put(SEND, sendBlip(), 0.22, 0.15);
+  bus.put(SENT, sendBlip(), 0.18, 0.15); // la fiche part
   // Séquence 4 : décroché, quatre coches
   bus.put(ANSWER - 0.02, click({ f: 1600, decay: 8, body: 300, seed: 7 }), 0.2, 0.1);
   FIELDS.forEach((t, i) => bus.put(t, penTick(300 + i), 0.5, 0.1));
@@ -739,8 +742,8 @@ function foley(lang = 'fr') {
   off.put(24.25, knock(402), 0.65, -0.55);
   off.put(24.75, creak(0.5, 380, 560, 403), 0.18, -0.6);
   off.put(25.25, creak(0.32, 180, 150, 404, { rough: 3 }), 0.22, -0.4);
-  bus.put(25.6, tapeUnroll(0.42, 405), 0.45, -0.3);
-  bus.put(26.08, tear(0.07, { bright: 1.5 }), 0.4, -0.3);
+  off.put(24.8, tapeUnroll(0.36, 405), 0.45, -0.5); // hors champ : le morceau arrive déjà coupé
+  off.put(25.18, tear(0.07, { bright: 1.5 }), 0.4, -0.5);
   bus.put(26.5, thump(300, 180, 0.05, 0.2, 406), 0.18, -0.1);
   bus.put(26.8, rub(0.62, 1300, 407), 0.9, -0.1);
   { const s = writingSound(c.hint, 'bic', { vref: 220 }); bus.put(s.t0, s.data, 2.5, -0.15); }
@@ -805,7 +808,7 @@ function cardSounds(cut, lang) {
 }
 
 // Instants où la musique s'efface un peu devant un bruitage important (−4 dB).
-const DUCKS = [4.0, ...CARD_LAND, ...STAMPS, 26.08, BUMP, 38.0, CARD_SWAP.in[1], CARD_SWAP.stamp, PAY_OK, PAY_OK + 0.5, 55.5, 56.0];
+const DUCKS = [4.0, ...CARD_LAND, ...STAMPS, 25.18, BUMP, 38.0, CARD_SWAP.in[1], CARD_SWAP.stamp, PAY_OK, PAY_OK + 0.5, 55.5, 56.0];
 
 // ---------- mix ----------
 
@@ -969,14 +972,14 @@ function assemble(cut, stems) {
     const fadeIn = n > 0 && !joined(n), fadeOut = n < segs.length - 1 && !joined(n + 1);
     for (const key of ['fx', 'mu', 'amb']) {
       const h = Math.floor(XF[key] / 2);
-      const i0 = fadeIn ? a - h : a, i1 = fadeOut ? e + h : e;
+      const i0 = fadeIn ? a - h : a, i1 = e;
       const src = stems[key];
       for (let i = Math.max(0, i0); i < i1 && i < len; i++) {
         const j = f0 + (i - a);
         if (j < 0 || j >= src.L.length) continue;
         let k = 1;
         if (fadeIn && i < a + h) k = Math.sin((Math.PI / 2) * ((i - (a - h)) / (2 * h)));
-        if (fadeOut && i >= e - h) k = Math.min(k, Math.cos((Math.PI / 2) * ((i - (e - h)) / (2 * h))));
+        if (fadeOut && i >= e - 2 * h) k = Math.min(k, Math.cos((Math.PI / 2) * ((i - (e - 2 * h)) / (2 * h))));
         out[key].L[i] += src.L[j] * k;
         out[key].R[i] += src.R[j] * k;
       }
@@ -1008,7 +1011,7 @@ function build(cut, stems) {
     fin = limit(L.map((x) => x * gain), R.map((x) => x * gain), db(-2.5));
     wav(tmp, ...fin);
     const m = measure(tmp);
-    if (Math.abs(m.I + 14) < 0.2 && m.TP <= -2.0) break;
+    if (Math.abs(m.I + 14) < 0.05 && m.TP <= -2.0) break;
     gain *= db(-14 - m.I);
   }
   fs.unlinkSync(tmp);
