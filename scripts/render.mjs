@@ -11,11 +11,31 @@
 //   node scripts/render.mjs --stills 188,338,975 images choisies
 //   node scripts/render.mjs --png                images PNG sans perte (plus lent)
 import { chromium } from 'playwright';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { serve } from './serve.mjs';
+
+// Crête réelle du fichier livré : l'encodeur AAC peut faire dépasser de 1 à 2 dB la crête de la bande-son.
+// Si le MP4 dépasse −1 dBTP, le son est réencodé un peu plus bas (la vidéo est recopiée telle quelle).
+const truePeak = (file) => {
+  const { stderr } = spawnSync('ffmpeg', ['-hide_banner', '-nostats', '-i', file, '-af', 'ebur128=peak=true', '-f', 'null', '-'], { encoding: 'utf8' });
+  const m = /Peak:\s+(-?[\d.]+) dBFS/.exec(stderr.slice(stderr.lastIndexOf('Summary')));
+  return m ? Number(m[1]) : NaN;
+};
+function truePeakGuard(file, audioIn, bitrate) {
+  let tp = truePeak(file), cut = 0;
+  for (let pass = 0; pass < 3 && tp > -1.0; pass++) {
+    cut += tp + 1.1;
+    const tmp = file.replace(/\.mp4$/, '.tmp.mp4');
+    spawnSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', file, ...audioIn, '-map', '0:v', '-map', '1:a', '-c:v', 'copy',
+      '-af', `volume=${(-cut).toFixed(2)}dB`, '-c:a', 'aac', '-b:a', bitrate, '-ar', '48000', '-shortest', '-movflags', '+faststart', tmp], { stdio: 'inherit' });
+    fs.renameSync(tmp, file);
+    tp = truePeak(file);
+  }
+  console.log(`crête réelle du MP4 : ${tp.toFixed(1)} dBTP${cut ? ` (son abaissé de ${cut.toFixed(2)} dB après l'encodage AAC)` : ''}`);
+}
 import { FPS } from '../src/timeline.js';
 import { cutOf, syncFor, segments } from '../src/cuts.js';
 
@@ -122,6 +142,7 @@ try {
     }));
     enc.stdin.end();
     await done;
+    if (withAudio) truePeakGuard(out, ['-ss', String(from / FPS), '-t', String((to - from) / FPS), '-i', AUDIO], light ? '128k' : '192k');
     console.log(`→ ${path.relative(ROOT, out)} (${(fs.statSync(out).size / 1e6).toFixed(1)} Mo)`);
   }
 } finally {

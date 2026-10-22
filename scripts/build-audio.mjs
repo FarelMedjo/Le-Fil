@@ -673,7 +673,7 @@ function music(sec) {
   for (const t of [RING, RING + 0.5]) {
     for (const [n, dt] of [['D5', 0], ['A4', step], ['D5', 2 * step]]) {
       const note = filt(Float32Array.from(balafon(NOTE(n), 7)), new Biquad('hp', 700), new Biquad('lp', 3800));
-      bus.put(t + dt, note, 0.3, 0.25);
+      bus.put(t + dt, note, 0.24, 0.25); // un peu sous les autres attaques : l'AAC à 128 kb/s la faisait dépasser −1 dBTP
     }
   }
   // 0:10,75 : réception, une seule note
