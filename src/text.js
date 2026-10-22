@@ -137,7 +137,7 @@ export function updateText(cards, t) {
       const k = easeOut(prog(t, t0, t0 + 0.32));
       m.style.transform = `scaleX(${k})`;
       // sur fond sombre, le mot reste blanc jusqu'au passage du surligneur, puis passe à l'encre
-      m.parentElement.classList.toggle('on', k > 0.45);
+      m.parentElement.classList.toggle('on', k > 0.99);
     });
     checks.forEach((chk, i) => {
       const t0 = c.items[i];
