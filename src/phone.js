@@ -212,7 +212,7 @@ function call(t, T) {
   // fiche « Votre demande »
   if (inCall) {
     const k = easeOut(prog(t, ANSWER + 0.1, ANSWER + 0.5));
-    const prop = ease(prog(t, PROPOSAL, PROPOSAL + 0.3));
+    const prop = easeInOut(prog(t, PROPOSAL, PROPOSAL + 0.3));
     let f = path(roundRect(4, 25, 62, 96, 3), { fill: '#FFFFFF' });
     f += text(T.form, 9, 34, { size: 3.4, weight: 700, family: F.grotesk });
     T.fields.forEach(([lab, val], i) => {
@@ -296,6 +296,7 @@ export function screen(t, lang, mode) {
   if (mode === 'pay') return payment(t, T);
   if (mode === 'off') return rect(0, 0, 70, 150, { fill: '#0A0D16' });
   if (t < RING) return chat(t, T);
+  if (t < RING + 0.15) return chat(t, T) + g({ opacity: n(prog(t, RING, RING + 0.15)) }, call(t, T));
   if (t < PROPOSAL) return call(t, T);
   if (t < PROPOSAL + 0.3) {
     // la fiche remonte et l'écran d'appel s'efface sur la proposition

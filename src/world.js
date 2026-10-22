@@ -434,8 +434,8 @@ export function monthHand(t, writings) {
     const w = writings[i];
     const pen = w.pen(clamp(t, m.at[0], m.at[1]));
     let tip = P(pen.pos[0], pen.pos[1]);
-    const inK = easeInOut(prog(t, m.at[0] - 0.2, m.at[0]));
-    const outK = easeInOut(prog(t, m.at[1], m.at[1] + 0.2));
+    const inK = easeOut(prog(t, m.at[0] - 0.2, m.at[0]));
+    const outK = easeIn(prog(t, m.at[1], m.at[1] + 0.2));
     const off = (1 - inK) + outK;
     const dir = rot([0, 1], m.r);
     tip = [tip[0] + dir[0] * off * 900, tip[1] + dir[1] * off * 900];

@@ -1,7 +1,7 @@
 // Calque texte (HTML). Les titres sont posés sur des bandes de papier adhésif qui se collent à l'écran,
 // une bande par ligne ; les mots montent en cascade (de 110 % à 0, décalage de 60 ms) ; le surligneur
 // lime passe derrière les passages *…*. Le carton final (slots end, cta, sign) abandonne les bandes.
-import { ease, easeOut, prog, clamp } from './util.js';
+import { ease, easeOut, easeInOut, prog, clamp } from './util.js';
 
 const KIND = { '!': 'hero', '#': 'title', '~': 'sub', '?': 'question', '=': 'num', '-': 'info', '.': 'note' };
 const STAGGER = 0.06;
@@ -105,7 +105,7 @@ export function updateText(cards, t) {
   for (const { c, el, strips, step, words, checks, marks } of cards) {
     if (t < c.in - 0.01 || t > c.out + 0.01) { el.style.visibility = 'hidden'; continue; }
     el.style.visibility = 'visible';
-    const e = ease(prog(t, c.out - EXIT, c.out));
+    const e = easeInOut(prog(t, c.out - EXIT, c.out));
     el.style.opacity = String(1 - e);
     el.style.transform = `translateY(${-24 * e}px)`;
     // bandes : elles se « collent » (léger écrasement, rotation qui se pose)
